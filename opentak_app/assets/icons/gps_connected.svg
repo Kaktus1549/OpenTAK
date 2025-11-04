@@ -1,0 +1,9 @@
+<svg fill="none" viewBox="0 0 24 24" id="gps-fixed" data-name="Flat Line" xmlns="http://www.w3.org/2000/svg" class="icon flat-line">
+  <g id="SVGRepo_iconCarrier">
+    <path d="M12,3V5m9,7H19m-7,9V19M3,12H5m7-7a7,7,0,1,0,7,7A7,7,0,0,0,12,5Z"
+      style="fill: none; stroke: #00cc66; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2px;">
+    </path>
+    <circle cx="12" cy="12" r="1.5" style="fill: #00cc66;"></circle>
+  </g>
+</svg>
+
