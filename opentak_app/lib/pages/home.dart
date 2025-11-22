@@ -8,6 +8,8 @@ import 'package:opentak_app/pages/widgets/_statuswidget.dart';
 import 'package:opentak_app/pages/widgets/_sliding_panel.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:opentak_app/pages/Utils/_location.dart';
+import 'package:opentak_app/pages/models/enums/_nav_status.dart';
+import 'package:flutter_compass/flutter_compass.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -25,19 +27,41 @@ class _HomePageState extends State<HomePage> {
   double lat = 0.0;
   double lon = 0.0;
   double altitude = 0.0;
+  double heading = 0.0;
+
+  StreamSubscription<CompassEvent>? _headingSub;
+  double? _smoothedHeading;
+
+  static const _smoothingFactor = 0.12;
+  static const _unlockThresholdDeg = 3.0;
+  static const _relockDiffDeg = 1.0;
+  static const _relockTimeout = Duration(milliseconds: 500);
+
+  bool _headingLocked = true;
+  DateTime _lastMovementTime = DateTime.fromMillisecondsSinceEpoch(0);
+
 
   final PanelController panelController = PanelController();
   StreamSubscription<Position>? _positionStreamSubscription;
+
+  NavigationStates navigationState = NavigationStates.decentred;
+  void _updateNavigationState(NavigationStates newState) {
+    setState(() {
+      navigationState = newState;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     _startListeningToLocation();
+    _startHeadingUpdates();
   }
 
   @override
   void dispose() {
     _positionStreamSubscription?.cancel();
+    _headingSub?.cancel();
     super.dispose();
   }
   void _retryLocationLater() {
@@ -48,6 +72,70 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void _startHeadingUpdates() {
+    _headingSub = FlutterCompass.events!.listen((event) {
+      final dir = event.heading;
+      if (dir == null) return;
+
+      _updateSmoothedHeading(dir);
+    });
+  }
+
+  void _updateSmoothedHeading(double newHeading) {
+    newHeading = _normalizeAngle(newHeading);
+
+    if (_smoothedHeading == null) {
+      _smoothedHeading = newHeading;
+      _headingLocked = true;
+
+      setState(() {
+        heading = newHeading;
+      });
+      return;
+    }
+
+    final sensorDiff = _angleDiff(_smoothedHeading!, newHeading).abs();
+
+
+    if (_headingLocked) {
+      if (sensorDiff < _unlockThresholdDeg) {
+        return;
+      }
+
+      _headingLocked = false;
+      _lastMovementTime = DateTime.now();
+    }
+
+    final diff = _angleDiff(_smoothedHeading!, newHeading);
+    _smoothedHeading = _normalizeAngle(
+      _smoothedHeading! + diff * _smoothingFactor,
+    );
+
+    _lastMovementTime = DateTime.now();
+
+    setState(() {
+      heading = _smoothedHeading!;
+    });
+
+    final diffToSensor = _angleDiff(_smoothedHeading!, newHeading).abs();
+    final stillForLongEnough =
+        DateTime.now().difference(_lastMovementTime) > _relockTimeout;
+
+    if (diffToSensor < _relockDiffDeg && stillForLongEnough) {
+      _headingLocked = true;
+    }
+  }
+
+  double _normalizeAngle(double angle) {
+    angle = angle % 360;
+    if (angle < 0) angle += 360;
+    return angle;
+  }
+
+  double _angleDiff(double from, double to) {
+    double diff = (to - from + 540) % 360 - 180;
+    return diff;
+  }
 
   Future<void> _startListeningToLocation() async {
     try {
@@ -55,10 +143,8 @@ class _HomePageState extends State<HomePage> {
 
       const locationSettings = LocationSettings(
         accuracy: LocationAccuracy.best,
+        distanceFilter: 2,
       );
-
-      // Mark as connected immediately when stream starts
-      setState(() => gpsConnected = true);
 
       _positionStreamSubscription = Geolocator.getPositionStream(
         locationSettings: locationSettings,
@@ -67,6 +153,7 @@ class _HomePageState extends State<HomePage> {
           lat = position.latitude;
           lon = position.longitude;
           altitude = position.altitude;
+          gpsConnected = true;
         });
       }, onError: (error) {
         debugPrint('Location stream error: $error');
@@ -115,11 +202,18 @@ class _HomePageState extends State<HomePage> {
             onTap2: slidePanelDown,
             latitude: lat,
             longitude: lon,
+            centered: navigationState == NavigationStates.centred,
+            followHeading: navigationState == NavigationStates.heading,
+            heading: heading,
+            gpsConnected: gpsConnected,
           ),
           Positioned(
             top: 58,
             right: 16,
-            child: const ControlButtonsContainer(),
+            child: ControlButtonsContainer(
+              currentState: navigationState,
+              navigationUpdate: _updateNavigationState,
+            ),
           ),
           Positioned(
             top: 184,

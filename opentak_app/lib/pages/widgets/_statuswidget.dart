@@ -40,23 +40,33 @@ class GPSSignalStatus extends StatefulWidget {
 }
 
 class _GPSSignalStatusState extends State<GPSSignalStatus> {
-  bool gpsConnected = false;
+  late bool _gpsConnected;
 
   void updateGPSSignalStatus(bool status) {
     setState(() {
-      gpsConnected = status;
+      _gpsConnected = status;
     });
   }
 
   @override
   void initState() {
     super.initState();
-    gpsConnected = widget.gpsConnected;
+    _gpsConnected = widget.gpsConnected;
+  }
+
+  @override
+  void didUpdateWidget(covariant GPSSignalStatus oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.gpsConnected != widget.gpsConnected) {
+      setState(() {
+        _gpsConnected = widget.gpsConnected;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    String assetPath = gpsConnected
+    String assetPath = _gpsConnected
         ? 'assets/icons/gps_connected.svg'
         : 'assets/icons/gps_disconnected.svg';
     return SvgPicture.asset(

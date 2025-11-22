@@ -8,22 +8,59 @@ class MapWidget extends StatefulWidget {
   final bool slidingPanelUp;
   final double longitude;
   final double latitude;
-  const MapWidget({super.key, required this.onTap, required this.slidingPanelUp, required this.onTap2, required this.latitude, required this.longitude});
+  final bool centered;
+  final bool followHeading;
+  final double heading;
+  final bool gpsConnected;
+
+  const MapWidget({
+    super.key,
+    required this.onTap,
+    required this.slidingPanelUp,
+    required this.onTap2,
+    required this.latitude,
+    required this.longitude,
+    required this.centered,
+    required this.followHeading,
+    required this.heading,
+    required this.gpsConnected,
+  });
 
   @override
   State<MapWidget> createState() => _MapWidgetState();
 }
 
 class _MapWidgetState extends State<MapWidget> {
+  final MapController _mapController = MapController();
   double mapZoomLevel = 15.0;
-  late double mapCenterLatitude;
-  late double mapCenterLongitude;
+  late bool gpsConnected;
+  bool lastGPSStatus = false;
 
   @override
   void initState() {
     super.initState();
-    mapCenterLatitude = widget.latitude;
-    mapCenterLongitude = widget.longitude;
+  }
+
+  @override
+  void didUpdateWidget(MapWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.gpsConnected == true){
+      if (lastGPSStatus == false){
+        // GPS just got connected, recenter the map
+        _mapController.move(LatLng(widget.latitude, widget.longitude), mapZoomLevel);
+        lastGPSStatus = true;
+        return;
+      }
+    }
+    // Whenever coordinates change, move the map center
+    if ((widget.latitude != oldWidget.latitude || widget.longitude != oldWidget.longitude) || (widget.centered || widget.followHeading)) {
+      double heading = 0.0;
+      if (widget.followHeading) {
+        heading = -widget.heading;
+      }
+      _mapController.move(LatLng(widget.latitude, widget.longitude), mapZoomLevel);
+      _mapController.rotate(heading);
+    }
   }
 
   void _handleTap() {
@@ -39,21 +76,39 @@ class _MapWidgetState extends State<MapWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // assets/images/Mapa.png is a placeholder for the map image
-    return GestureDetector(
-      onTap: _handleTap,
-      child: FlutterMap(
+    return FlutterMap(
+        mapController: _mapController,
         options: MapOptions(
-          initialCenter: LatLng(mapCenterLatitude, mapCenterLongitude), // Center the map over current coords
+          initialCenter: LatLng(widget.latitude, widget.longitude),
           initialZoom: mapZoomLevel,
+          onTap: (tapPosition, point) => _handleTap(),
+          // If a gesture moves the map while centered/followHeading is true, snap it back to the current coords.
+          onPositionChanged: (pos, hasGesture) {
+            if ((widget.centered || widget.followHeading) && hasGesture) {
+              _mapController.move(LatLng(widget.latitude, widget.longitude), mapZoomLevel);
+            }
+          },
         ),
         children: [
           TileLayer(
-            urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            tileProvider: NetworkTileProvider(), // místo BuiltInMapCachingProvider
-          )
+            urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+            userAgentPackageName: 'OpenTAK',
+          ),
+          MarkerLayer(
+            markers: [
+              Marker(
+                width: 40,
+                height: 40,
+                point: LatLng(widget.latitude, widget.longitude),
+                child: const Icon(
+                  Icons.my_location,
+                  color: Colors.blue,
+                  size: 36,
+                ),
+              ),
+            ],
+          ),
         ],
-      ),
-    );
+      );
   }
 }

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:opentak_app/pages/models/enums/_nav_status.dart';
 
 
 class ControlButtonsContainer extends StatelessWidget {
-  const ControlButtonsContainer({super.key});
+  final NavigationStates currentState;
+  final void Function(NavigationStates)? navigationUpdate;
+
+  const ControlButtonsContainer({super.key, required this.currentState, this.navigationUpdate});
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +37,10 @@ class ControlButtonsContainer extends StatelessWidget {
 
           Expanded(
             child: Center(
-              child: NavigationButton(),
+              child: NavigationButton(
+                currentState: currentState,
+                navigationUpdate: navigationUpdate,
+              ),
             ),
           ),
         ],
@@ -75,38 +82,37 @@ class SettingsButton extends StatelessWidget {
 }
 
 class NavigationButton extends StatefulWidget {
-  const NavigationButton({super.key});
+  final NavigationStates currentState;
+  final void Function(NavigationStates)? navigationUpdate;
+  const NavigationButton({super.key, required this.currentState, this.navigationUpdate});
 
   @override
   State<NavigationButton> createState() => _NavigationButtonState();
 }
 
-enum NavigationStates{
-  decentred,
-  centred,
-  heading,
-}
-
 class _NavigationButtonState extends State<NavigationButton> {
-  NavigationStates _currentState = NavigationStates.decentred;
+  late NavigationStates currentState;
 
   void _toggleNavigation() {
     setState(() {
-      _currentState = NavigationStates.values[(_currentState.index + 1) % NavigationStates.values.length];
+      if (widget.navigationUpdate != null) {
+        currentState = NavigationStates.values[(currentState.index + 1) % NavigationStates.values.length];
+        widget.navigationUpdate!(currentState);
+      }
     });
   }
 
   @override
   void initState() {
     super.initState();
-    _currentState = NavigationStates.decentred;
+    currentState = widget.currentState;
   }
 
   @override
   Widget build(BuildContext context) {
-    final asset = _currentState == NavigationStates.centred
+    final asset = currentState == NavigationStates.centred
         ? 'assets/icons/centred.svg'
-        : _currentState == NavigationStates.decentred
+        : currentState == NavigationStates.decentred
             ? 'assets/icons/decentred.svg'
             : 'assets/icons/compass.svg';
 
