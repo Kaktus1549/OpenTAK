@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MapWidget extends StatefulWidget {
   final void Function()? onTap;
@@ -33,17 +34,33 @@ class MapWidget extends StatefulWidget {
 
 class _MapWidgetState extends State<MapWidget> {
   final MapController _mapController = MapController();
-  final _tileProvider = FMTCTileProvider(
-    stores: const {'mapStore': BrowseStoreStrategy.readUpdateCreate},
-  );
-  double mapZoomLevel = 15.0;
-  late bool gpsConnected;
-  bool lastGPSStatus = false;
+  List<String> _downloadedMaps = [];
+  late FMTCTileProvider _tileProvider;
 
   @override
   void initState() {
     super.initState();
+    _loadDownloadedMaps();
   }
+
+  Future<void> _loadDownloadedMaps() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _downloadedMaps = prefs.getStringList('downloaded_offline_maps') ?? [];
+      _tileProvider = FMTCTileProvider(
+        stores: {
+          for (final id in _downloadedMaps)
+            id.split(':')[0]: BrowseStoreStrategy.readUpdateCreate,
+        },
+        otherStoresStrategy: null,
+      );
+    });
+  }
+
+  double mapZoomLevel = 15.0;
+  late bool gpsConnected;
+  bool lastGPSStatus = false;
+
 
   @override
   void didUpdateWidget(MapWidget oldWidget) {

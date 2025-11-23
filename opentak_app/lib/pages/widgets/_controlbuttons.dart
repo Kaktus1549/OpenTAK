@@ -119,7 +119,7 @@ class _NavigationButtonState extends State<NavigationButton> {
         ? 'assets/icons/centred.svg'
         : currentState == NavigationStates.decentred
             ? 'assets/icons/decentred.svg'
-            : 'assets/icons/compass.svg';
+            : null;
 
     return IconButton(
       padding: EdgeInsets.zero,
@@ -129,13 +129,19 @@ class _NavigationButtonState extends State<NavigationButton> {
         width: 35,
         height: 35,
         child: Center(
-          child: SvgPicture.asset(
-            asset,
-            width: 32,
-            height: 32,
-            fit: BoxFit.contain,
-            alignment: Alignment.center,
-          ),
+          child: asset != null
+              ? SvgPicture.asset(
+                  asset,
+                  width: 32,
+                  height: 32,
+                  fit: BoxFit.contain,
+                  alignment: Alignment.center,
+                )
+              : const Icon(
+                  Icons.compass_calibration_rounded,
+                  size: 32,
+                  color: Color(0xFF358ADB),
+              ),
         ),
       ),
       onPressed: _toggleNavigation,

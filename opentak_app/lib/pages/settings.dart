@@ -1,5 +1,7 @@
 import 'package:settings_ui/settings_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:opentak_app/pages/settings/_map_source.dart';
+import 'package:opentak_app/pages/settings/_offline_maps.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -46,17 +48,23 @@ class SettingsPage extends StatelessWidget {
             title: const Text('Map related'),
             tiles: [
               SettingsTile.navigation(
-                leading: const Icon(Icons.person),
-                title: const Text('Profile'),
+                leading: const Icon(Icons.map),
+                title: const Text('Map Source'),
                 onPressed: (context) {
-                  // Navigate to profile page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MapSourceSettingsPage()),
+                  );
                 },
               ),
               SettingsTile.navigation(
-                leading: const Icon(Icons.lock),
-                title: const Text('Change Password'),
+                leading: const Icon(Icons.save),
+                title: const Text('Offline Maps'),
                 onPressed: (context) {
-                  // Navigate to change password page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const OfflineMapsSettingsPage()),
+                  );
                 },
               ),
             ],
