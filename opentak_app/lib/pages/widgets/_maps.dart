@@ -75,14 +75,12 @@ class _MapWidgetState extends State<MapWidget> {
     }
     // Whenever coordinates change, move the map center
     if ((widget.centered || widget.followHeading)) {
-      if ((widget.latitude == oldWidget.latitude && widget.longitude == oldWidget.longitude) && widget.followHeading == false){
-        return;
-      }
       double heading = 0.0;
       if (widget.followHeading) {
         heading = -widget.heading;
       }
-      _mapController.move(LatLng(widget.latitude, widget.longitude), mapZoomLevel);
+      final currentZoom = _mapController.camera.zoom;
+      _mapController.move(LatLng(widget.latitude, widget.longitude), currentZoom);
       _mapController.rotate(heading);
     }
   }
@@ -106,10 +104,22 @@ class _MapWidgetState extends State<MapWidget> {
           initialCenter: LatLng(widget.latitude, widget.longitude),
           initialZoom: mapZoomLevel,
           onTap: (tapPosition, point) => _handleTap(),
+          interactionOptions: InteractionOptions(
+            flags: (widget.centered || widget.followHeading)
+                ? InteractiveFlag.pinchZoom | InteractiveFlag.doubleTapZoom
+                : InteractiveFlag.all,
+          ),
           // If a gesture moves the map while centered/followHeading is true, snap it back to the current coords.
           onPositionChanged: (pos, hasGesture) {
             if ((widget.centered || widget.followHeading) && hasGesture) {
-              _mapController.move(LatLng(widget.latitude, widget.longitude), mapZoomLevel);
+              final currentZoom = _mapController.camera.zoom;
+              _mapController.move(LatLng(widget.latitude, widget.longitude), currentZoom);
+              if (widget.followHeading) {
+                _mapController.rotate(-widget.heading);
+              }
+              else {
+                _mapController.rotate(0.0);
+              }
             }
           },
         ),
