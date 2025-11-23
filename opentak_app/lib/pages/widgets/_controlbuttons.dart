@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:opentak_app/pages/models/enums/_nav_status.dart';
+import 'package:opentak_app/pages/settings.dart';
+
 
 
 class ControlButtonsContainer extends StatelessWidget {
@@ -75,7 +77,10 @@ class SettingsButton extends StatelessWidget {
         ),
       ),
       onPressed: () {
-        // Handle settings button press
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const SettingsPage()),
+        );
       },
     );
   }

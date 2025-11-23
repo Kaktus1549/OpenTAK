@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 
 class MapWidget extends StatefulWidget {
   final void Function()? onTap;
@@ -32,6 +33,9 @@ class MapWidget extends StatefulWidget {
 
 class _MapWidgetState extends State<MapWidget> {
   final MapController _mapController = MapController();
+  final _tileProvider = FMTCTileProvider(
+    stores: const {'mapStore': BrowseStoreStrategy.readUpdateCreate},
+  );
   double mapZoomLevel = 15.0;
   late bool gpsConnected;
   bool lastGPSStatus = false;
@@ -53,7 +57,10 @@ class _MapWidgetState extends State<MapWidget> {
       }
     }
     // Whenever coordinates change, move the map center
-    if ((widget.latitude != oldWidget.latitude || widget.longitude != oldWidget.longitude) || (widget.centered || widget.followHeading)) {
+    if ((widget.centered || widget.followHeading)) {
+      if ((widget.latitude == oldWidget.latitude && widget.longitude == oldWidget.longitude) && widget.followHeading == false){
+        return;
+      }
       double heading = 0.0;
       if (widget.followHeading) {
         heading = -widget.heading;
@@ -93,6 +100,7 @@ class _MapWidgetState extends State<MapWidget> {
           TileLayer(
             urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
             userAgentPackageName: 'OpenTAK',
+            tileProvider: _tileProvider,
           ),
           MarkerLayer(
             markers: [

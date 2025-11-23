@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:opentak_app/pages/home.dart';
+import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await FMTCObjectBoxBackend().initialise();
+  await FMTCStore('mapStore').manage.create();
   runApp(const MyApp());
 }
 
