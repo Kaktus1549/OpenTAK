@@ -12,17 +12,32 @@ class _MapDownloadState {
   final Stream<DownloadProgress> stream;
   final String storeId;
   final Object instanceId;
+  final List<String> downloadedMaps;
+  final void Function(String key) onComplete;
+  final Future<void> Function(String key) deletePresetMap;
   bool paused = false;
 
   _MapDownloadState({
     required this.stream,
     required this.storeId,
     required this.instanceId,
+    required this.downloadedMaps,
+    required this.onComplete,
+    required this.deletePresetMap,
   });
 }
 
 class PredefinedMapsSettingsPage extends StatefulWidget {
-  const PredefinedMapsSettingsPage({super.key});
+  final dynamic downloadedMaps;
+  final void Function(String key) onComplete;
+  final Future<void> Function(String key) deletePresetMap;
+
+  const PredefinedMapsSettingsPage({
+    super.key,
+    required this.downloadedMaps,
+    required this.onComplete,
+    required this.deletePresetMap,
+  });
 
   @override
   State<PredefinedMapsSettingsPage> createState() =>
@@ -33,14 +48,13 @@ class _PredefinedMapsSettingsPageState extends State<PredefinedMapsSettingsPage>
   late SharedPreferences _prefs;
   int minZoom = 1;
   int maxZoom = 18;
-  List<String> _downloadedMaps = [];
 
   final Map<String, _MapDownloadState> _downloads = {};
 
   String _mapKey(String id, String name) => '$id:$name';
 
   bool _isMapDownloaded(String id, String name) =>
-      _downloadedMaps.contains(_mapKey(id, name));
+      widget.downloadedMaps.contains(_mapKey(id, name));
 
   @override
   void initState(){
@@ -53,16 +67,12 @@ class _PredefinedMapsSettingsPageState extends State<PredefinedMapsSettingsPage>
     setState(() {});
     minZoom = _prefs.getInt('minZoom') ?? 1;
     maxZoom = _prefs.getInt('maxZoom') ?? 18;
-    _downloadedMaps = _prefs.getStringList('downloaded_offline_maps') ?? [];
 
     if (_prefs.getInt('minZoom') == null) {
       _prefs.setInt('minZoom', minZoom);
     }
     if (_prefs.getInt('maxZoom') == null) {
       _prefs.setInt('maxZoom', maxZoom);
-    }
-    if (_prefs.getStringList('downloaded_offline_maps') == null) {
-      _prefs.setStringList('downloaded_offline_maps', _downloadedMaps);
     }
   }
   
@@ -132,6 +142,9 @@ class _PredefinedMapsSettingsPageState extends State<PredefinedMapsSettingsPage>
           stream: downloadProgress,
           storeId: storeName,
           instanceId: id,
+          downloadedMaps: widget.downloadedMaps,
+          onComplete: widget.onComplete,
+          deletePresetMap: widget.deletePresetMap,
         );
       });
     } catch (error) {
@@ -183,7 +196,24 @@ class _PredefinedMapsSettingsPageState extends State<PredefinedMapsSettingsPage>
     final downloadState = _downloads[key];
 
     if (_isMapDownloaded(id, presetMap.name) && downloadState == null) {
-      return const Icon(Icons.check, color: Colors.green);
+      return SizedBox(
+        width: 24,
+        height: 24,
+        child: IconButton(
+          icon: const Icon(Icons.delete),
+          color: Colors.red,
+          iconSize: 24,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          splashRadius: 24,
+          onPressed: () {
+            setState(() {
+              final id = presetMap.id;
+              widget.deletePresetMap(id);
+            });
+          },
+        ),
+      );
     }
 
     if (downloadState != null) {
@@ -196,7 +226,7 @@ class _PredefinedMapsSettingsPageState extends State<PredefinedMapsSettingsPage>
           Future.microtask(() {
             setState(() {
               _downloads.remove(key);
-              _onComplete(key);
+              widget.onComplete(key);
             });
           });
         }
@@ -306,12 +336,7 @@ class _PredefinedMapsSettingsPageState extends State<PredefinedMapsSettingsPage>
     );
   }
 
-  void _onComplete(String key) {
-    if (!_downloadedMaps.contains(key)) {
-      _downloadedMaps.add(key);
-      _prefs.setStringList('downloaded_offline_maps', _downloadedMaps);
-    }
-  }
+  
 
   @override
   Widget build(BuildContext context) {

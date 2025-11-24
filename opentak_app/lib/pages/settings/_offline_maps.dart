@@ -37,17 +37,16 @@ class _OfflineMapsSettingsPageState extends State<OfflineMapsSettingsPage> {
     final store = FMTCStore(storeName);
 
     try {
-      if (await store.manage.ready) {
-        await store.manage.delete();
-      }
-
-      if (!mounted) return;
-
+      
       setState(() {
         // List: "id:mapName"
         _downloadedMaps.removeWhere((element) => element.startsWith('$id:'));
         _prefs.setStringList('downloaded_offline_maps', _downloadedMaps);
       });
+
+      if (await store.manage.ready) {
+        await store.manage.delete();
+      }
 
       if (!mounted) return;
 
@@ -62,6 +61,16 @@ class _OfflineMapsSettingsPageState extends State<OfflineMapsSettingsPage> {
     }
   }
 
+  void _onComplete(String key) {
+    if (!_downloadedMaps.contains(key)) {
+      if (!mounted) return;
+      setState(() {
+        _downloadedMaps.add(key);
+        _prefs.setStringList('downloaded_offline_maps', _downloadedMaps);
+      });
+      
+    }
+  }
 
   List<AbstractSettingsTile> _buildDownloadedMapTiles() {
     if (!_prefsLoaded) {
@@ -90,11 +99,11 @@ class _OfflineMapsSettingsPageState extends State<OfflineMapsSettingsPage> {
         title: Text(mapName.split(':')[1]),
         trailing: IconButton(
           icon: const Icon(Icons.delete),
+          color: Colors.red,
           onPressed: () {
-            setState(() {
-              final id = mapName.split(':')[0];
-              _deletePresetMap(id);
-            });
+            // Trigger deletion; _deletePresetMap updates state when done.
+            final id = mapName.split(':')[0];
+            _deletePresetMap(id);
           },
         ),
       );
@@ -136,7 +145,11 @@ class _OfflineMapsSettingsPageState extends State<OfflineMapsSettingsPage> {
                     context,
                     MaterialPageRoute(
                       builder: (context) =>
-                          const PredefinedMapsSettingsPage(),
+                          PredefinedMapsSettingsPage(
+                            downloadedMaps: _downloadedMaps,
+                            onComplete: _onComplete,
+                            deletePresetMap: _deletePresetMap,
+                          ),
                     ),
                   );
                 },
