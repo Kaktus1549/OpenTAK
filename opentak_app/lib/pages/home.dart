@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:opentak_app/pages/widgets/_controlbuttons.dart';
-import 'package:opentak_app/pages/widgets/_sosbutton.dart';
-import 'package:opentak_app/pages/widgets/_maps.dart';
-import 'package:opentak_app/pages/widgets/_statuswidget.dart';
-import 'package:opentak_app/pages/widgets/_sliding_panel.dart';
+import 'package:opentak_app/widgets/_controlbuttons.dart';
+import 'package:opentak_app/widgets/_sosbutton.dart';
+import 'package:opentak_app/widgets/_maps.dart';
+import 'package:opentak_app/widgets/_statuswidget.dart';
+import 'package:opentak_app/widgets/_sliding_panel.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
-import 'package:opentak_app/pages/Utils/_location.dart';
-import 'package:opentak_app/pages/models/enums/_nav_status.dart';
+import 'package:opentak_app/Utils/_location.dart';
+import 'package:opentak_app/models/enums/_nav_status.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 
 class HomePage extends StatefulWidget {
@@ -206,6 +206,7 @@ class _HomePageState extends State<HomePage> {
             followHeading: navigationState == NavigationStates.heading,
             heading: heading,
             gpsConnected: gpsConnected,
+            altitude: altitude,
           ),
           Positioned(
             top: 58,

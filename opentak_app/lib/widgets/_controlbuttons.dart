@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:opentak_app/pages/models/enums/_nav_status.dart';
+import 'package:opentak_app/models/enums/_nav_status.dart';
 import 'package:opentak_app/pages/settings.dart';
 
 

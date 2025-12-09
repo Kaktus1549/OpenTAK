@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
+import 'package:opentak_app/db/app_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:opentak_app/models/_custom_map_overlay.dart';
+import 'package:provider/provider.dart';
+import 'package:opentak_app/save_data/_file_save.dart';
 
 class MapWidget extends StatefulWidget {
   final void Function()? onTap;
@@ -14,6 +18,7 @@ class MapWidget extends StatefulWidget {
   final bool followHeading;
   final double heading;
   final bool gpsConnected;
+  final double altitude;
 
   const MapWidget({
     super.key,
@@ -26,6 +31,7 @@ class MapWidget extends StatefulWidget {
     required this.followHeading,
     required this.heading,
     required this.gpsConnected,
+    required this.altitude,
   });
 
   @override
@@ -37,11 +43,20 @@ class _MapWidgetState extends State<MapWidget> {
   List<String> _downloadedMaps = [];
   late FMTCTileProvider _tileProvider;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadDownloadedMaps();
-  }
+  FloorOverlay firstFloor = FloorOverlay(assetPath: "assets/test/testMap.svg", topLeft: LatLng(50.133630753827774, 14.510051097636836), bottomRight: LatLng(50.133597737787255, 14.51021080053696), bottomLeft: LatLng(50.13357448862208, 14.510064591766461), floorNumber: 1, id: 1, buildingId: 1);
+  FloorOverlay secondFloor = FloorOverlay(assetPath: "assets/test/m.jpg", topLeft: LatLng(50.133630753827774, 14.510051097636836), bottomRight: LatLng(50.133597737787255, 14.51021080053696), bottomLeft: LatLng(50.13357448862208, 14.510064591766461), floorNumber: 2, id: 2, buildingId: 1);
+
+  late CustomMapOverlay customOverlay;
+  late AppDatabase database;
+  List<CustomMapOverlay> buildingOverlays = [];
+  
+  List<RotatedOverlayImage> _overlayImages = [];
+  LatLng? _lastOverlayPosition;
+  bool _isLoadingOverlays = false;
+  
+  double mapZoomLevel = 15.0;
+  late bool gpsConnected;
+  bool lastGPSStatus = false;
 
   Future<void> _loadDownloadedMaps() async {
     final prefs = await SharedPreferences.getInstance();
@@ -56,35 +71,45 @@ class _MapWidgetState extends State<MapWidget> {
       );
     });
   }
-
-  double mapZoomLevel = 15.0;
-  late bool gpsConnected;
-  bool lastGPSStatus = false;
-
-
-  @override
-  void didUpdateWidget(MapWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.gpsConnected == true){
-      if (lastGPSStatus == false){
-        // GPS just got connected, recenter the map
-        _mapController.move(LatLng(widget.latitude, widget.longitude), mapZoomLevel);
-        lastGPSStatus = true;
+  
+  Future<void> _reloadBuildingOverlays(LatLng position) async {
+    const minDistanceMeters = 10.0;
+    if (_lastOverlayPosition != null) {
+      final dist = const Distance()(position, _lastOverlayPosition!);
+      if (dist < minDistanceMeters) {
         return;
       }
     }
-    // Whenever coordinates change, move the map center
-    if ((widget.centered || widget.followHeading)) {
-      double heading = 0.0;
-      if (widget.followHeading) {
-        heading = -widget.heading;
-      }
-      final currentZoom = _mapController.camera.zoom;
-      _mapController.move(LatLng(widget.latitude, widget.longitude), currentZoom);
-      _mapController.rotate(heading);
-    }
-  }
 
+
+    if (_isLoadingOverlays) return;
+    _isLoadingOverlays = true;
+
+    final db = context.read<AppDatabase>();
+    final storage = context.read<MapStorage>();
+
+
+    final nearbyBuildings =
+    await db.getOverlaysNearPosition(position, radiusKm: 0.1);
+
+    final newImages = await CustomMapOverlayUtils.renderActiveOverlays(
+      nearbyBuildings,
+      widget.altitude,
+      storage,
+    );
+
+
+    if (!mounted) return;
+
+    setState(() {
+      _overlayImages = newImages;
+      buildingOverlays = nearbyBuildings; 
+      _lastOverlayPosition = position;
+      _isLoadingOverlays = false;
+    });
+
+  }
+  
   void _handleTap() {
     if (widget.onTap != null && !widget.slidingPanelUp) {
       widget.onTap!();
@@ -95,6 +120,42 @@ class _MapWidgetState extends State<MapWidget> {
       return;
     }
   }
+
+
+  @override
+  void initState() {
+    super.initState();
+    database = context.read<AppDatabase>();
+    customOverlay = CustomMapOverlay(floorList: [ firstFloor, secondFloor ], floorHeight: 3.0, baseHeight: 0.0, buildingID: 1, name: "Test Building");
+    _loadDownloadedMaps();
+  }
+
+  @override
+  void didUpdateWidget(MapWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final currentPos = LatLng(widget.latitude, widget.longitude);
+
+    if (widget.gpsConnected == true && lastGPSStatus == false) {
+      _mapController.move(currentPos, mapZoomLevel);
+      lastGPSStatus = true;
+      _reloadBuildingOverlays(currentPos);
+      return;
+    }
+
+    if ((widget.centered || widget.followHeading)) {
+      double heading = 0.0;
+      if (widget.followHeading) {
+        heading = -widget.heading;
+      }
+      final currentZoom = _mapController.camera.zoom;
+      _mapController.move(currentPos, currentZoom);
+      _mapController.rotate(heading);
+      _reloadBuildingOverlays(currentPos);
+    }
+
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -121,6 +182,9 @@ class _MapWidgetState extends State<MapWidget> {
                 _mapController.rotate(0.0);
               }
             }
+            if (hasGesture && !(widget.centered || widget.followHeading)) {
+              _reloadBuildingOverlays(pos.center);
+            }
           },
         ),
         children: [
@@ -129,6 +193,10 @@ class _MapWidgetState extends State<MapWidget> {
             userAgentPackageName: 'OpenTAK',
             tileProvider: _tileProvider,
           ),
+          if (_overlayImages.isNotEmpty)
+            OverlayImageLayer(
+              overlayImages: _overlayImages,
+            ),
           MarkerLayer(
             markers: [
               Marker(

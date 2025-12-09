@@ -1,4 +1,4 @@
-import 'package:opentak_app/pages/models/enums/_map_types.dart';
+import 'package:opentak_app/models/enums/_map_types.dart';
 
 class PresetMap {
   final String name;

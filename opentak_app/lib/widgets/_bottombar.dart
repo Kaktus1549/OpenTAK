@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:opentak_app/pages/models/_bottombaritem.dart';
-import 'package:opentak_app/pages/Utils/_utils.dart';
+import 'package:opentak_app/models/_bottombaritem.dart';
+import 'package:opentak_app/Utils/_utils.dart';
 
 class BottomNavigationBar extends StatefulWidget {
   final bool slidingPanelUp;

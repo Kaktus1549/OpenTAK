@@ -1,7 +1,7 @@
 import 'package:settings_ui/settings_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:opentak_app/pages/settings/_map_source.dart';
-import 'package:opentak_app/pages/settings/_offline_maps.dart';
+import 'package:opentak_app/settings/_map_source.dart';
+import 'package:opentak_app/settings/_offline_maps.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});

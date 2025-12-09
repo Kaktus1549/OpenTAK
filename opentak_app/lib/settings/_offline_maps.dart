@@ -1,7 +1,7 @@
 import 'package:settings_ui/settings_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:opentak_app/pages/settings/_predefined_maps.dart';
+import 'package:opentak_app/settings/_predefined_maps.dart';
 import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 
 class OfflineMapsSettingsPage extends StatefulWidget {
@@ -132,7 +132,7 @@ class _OfflineMapsSettingsPageState extends State<OfflineMapsSettingsPage> {
             tiles: [
               SettingsTile.navigation(
                 leading: const Icon(Icons.draw),
-                title: const Text('Custom Map'),
+                title: const Text('Define Map'),
                 onPressed: (context) {
                   // Implement download logic here
                 },

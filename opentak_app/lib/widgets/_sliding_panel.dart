@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
-import 'package:opentak_app/pages/widgets/_bottombar.dart' as custom_bottombar;
-import 'package:opentak_app/pages/widgets/_search.dart' as search_widget;
-import 'package:opentak_app/pages/models/_sliding_bar_item.dart';
+import 'package:opentak_app/widgets/_bottombar.dart' as custom_bottombar;
+import 'package:opentak_app/widgets/_search.dart' as search_widget;
+import 'package:opentak_app/models/_sliding_bar_item.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class SlidingPanelWidget extends StatefulWidget {
@@ -99,7 +99,7 @@ class _SlidingPanelWidgetState extends State<SlidingPanelWidget> {
                                 item.iconPath,
                                 width: 40,
                                 height: 40,
-                                color: Colors.white,
+                                colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(

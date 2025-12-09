@@ -1,12 +1,12 @@
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:opentak_app/pages/models/enums/_map_types.dart';
-import 'package:opentak_app/pages/models/_maps_presets.dart';
+import 'package:opentak_app/models/enums/_map_types.dart';
+import 'package:opentak_app/models/_maps_presets.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
-import 'package:opentak_app/pages/widgets/_zoom_slider.dart';
+import 'package:opentak_app/widgets/_zoom_slider.dart';
 
 class _MapDownloadState {
   final Stream<DownloadProgress> stream;
