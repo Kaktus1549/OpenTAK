@@ -10,6 +10,7 @@ import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:opentak_app/Utils/_location.dart';
 import 'package:opentak_app/models/enums/_nav_status.dart';
 import 'package:flutter_compass/flutter_compass.dart';
+import 'dart:io';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -141,10 +142,18 @@ class _HomePageState extends State<HomePage> {
     try {
       await GeolocationUtils.ensurePermissions();
 
-      const locationSettings = LocationSettings(
-        accuracy: LocationAccuracy.best,
-        distanceFilter: 2,
-      );
+      final locationSettings = Platform.isIOS
+        ? AppleSettings(
+            accuracy: LocationAccuracy.bestForNavigation,
+            activityType: ActivityType.otherNavigation,
+            distanceFilter: 0,
+            pauseLocationUpdatesAutomatically: false,
+          )
+        : AndroidSettings(
+            accuracy: LocationAccuracy.bestForNavigation,
+            distanceFilter: 0,
+            intervalDuration: const Duration(seconds: 1),
+          );
 
       _positionStreamSubscription = Geolocator.getPositionStream(
         locationSettings: locationSettings,

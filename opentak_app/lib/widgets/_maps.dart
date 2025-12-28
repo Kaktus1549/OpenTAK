@@ -7,6 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opentak_app/models/_custom_map_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:opentak_app/save_data/_file_save.dart';
+import 'package:opentak_app/drawing/_paint_notifiers.dart';
+import 'package:opentak_app/drawing/_painter.dart';
+
 
 class MapWidget extends StatefulWidget {
   final void Function()? onTap;
@@ -57,6 +60,11 @@ class _MapWidgetState extends State<MapWidget> {
   double mapZoomLevel = 15.0;
   late bool gpsConnected;
   bool lastGPSStatus = false;
+
+  late bool _drawMode;
+  bool _mapReady = false;
+
+  late DrawingController drawing;
 
   Future<void> _loadDownloadedMaps() async {
     final prefs = await SharedPreferences.getInstance();
@@ -121,14 +129,28 @@ class _MapWidgetState extends State<MapWidget> {
     }
   }
 
+  void setDrawMode(bool value) {
+    setState(() => _drawMode = value);
+  }
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _mapReady = true);
+    });
+
+    MapStrokeController strokeController = context.read<MapStrokeController>();
+    _drawMode = strokeController.isDrawingEnabled;
+    strokeController.addListener(() {
+      setDrawMode(strokeController.isDrawingEnabled);
+    });
+
     database = context.read<AppDatabase>();
     customOverlay = CustomMapOverlay(floorList: [ firstFloor, secondFloor ], floorHeight: 3.0, baseHeight: 0.0, buildingID: 1, name: "Test Building");
     _loadDownloadedMaps();
   }
+
 
   @override
   void didUpdateWidget(MapWidget oldWidget) {
@@ -153,65 +175,95 @@ class _MapWidgetState extends State<MapWidget> {
       _mapController.rotate(heading);
       _reloadBuildingOverlays(currentPos);
     }
-
   }
-
 
   @override
   Widget build(BuildContext context) {
-    return FlutterMap(
-        mapController: _mapController,
-        options: MapOptions(
-          initialCenter: LatLng(widget.latitude, widget.longitude),
-          initialZoom: mapZoomLevel,
-          onTap: (tapPosition, point) => _handleTap(),
-          interactionOptions: InteractionOptions(
-            flags: (widget.centered || widget.followHeading)
-                ? InteractiveFlag.pinchZoom | InteractiveFlag.doubleTapZoom
-                : InteractiveFlag.all,
+    drawing = context.watch<DrawingController>();
+    return Stack(
+      children: [
+        FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialCenter: LatLng(widget.latitude, widget.longitude),
+            initialZoom: mapZoomLevel,
+            onTap: (tapPosition, point) => _handleTap(),
+
+            interactionOptions: InteractionOptions(
+              flags: _drawMode
+                  ? InteractiveFlag.none
+                  : ((widget.centered || widget.followHeading)
+                      ? (InteractiveFlag.pinchZoom | InteractiveFlag.doubleTapZoom)
+                      : InteractiveFlag.all),
+            ),
+            onPositionChanged: (pos, hasGesture) {
+              if (hasGesture && !_drawMode && !(widget.centered || widget.followHeading)) {
+                _reloadBuildingOverlays(pos.center);
+              }
+            },
           ),
-          // If a gesture moves the map while centered/followHeading is true, snap it back to the current coords.
-          onPositionChanged: (pos, hasGesture) {
-            if ((widget.centered || widget.followHeading) && hasGesture) {
-              final currentZoom = _mapController.camera.zoom;
-              _mapController.move(LatLng(widget.latitude, widget.longitude), currentZoom);
-              if (widget.followHeading) {
-                _mapController.rotate(-widget.heading);
-              }
-              else {
-                _mapController.rotate(0.0);
-              }
-            }
-            if (hasGesture && !(widget.centered || widget.followHeading)) {
-              _reloadBuildingOverlays(pos.center);
-            }
-          },
-        ),
-        children: [
-          TileLayer(
+          children: [
+            TileLayer(
             urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
             userAgentPackageName: 'OpenTAK',
             tileProvider: _tileProvider,
           ),
-          if (_overlayImages.isNotEmpty)
-            OverlayImageLayer(
-              overlayImages: _overlayImages,
+            if (_overlayImages.isNotEmpty) OverlayImageLayer(overlayImages: _overlayImages),
+            MarkerLayer(
+              markers: [
+                Marker(
+                  width: 40,
+                  height: 40,
+                  point: LatLng(widget.latitude, widget.longitude),
+                  child: const Icon(
+                    Icons.my_location,
+                    color: Colors.blue,
+                    size: 36,
+                  ),
+                ),
+              ],
             ),
-          MarkerLayer(
-            markers: [
-              Marker(
-                width: 40,
-                height: 40,
-                point: LatLng(widget.latitude, widget.longitude),
-                child: const Icon(
-                  Icons.my_location,
-                  color: Colors.blue,
-                  size: 36,
+          ],
+        ),
+
+        if (_mapReady)
+          StreamBuilder(
+            stream: _mapController.mapEventStream,
+            builder: (_, _) => Positioned.fill(
+              child: IgnorePointer(
+                ignoring: !_drawMode,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onPanStart: (d) {
+                    final ll = _mapController.camera.screenOffsetToLatLng(d.localPosition);
+                    MapStrokeController strokeController = context.read<MapStrokeController>();
+                    drawing.startStroke(
+                      color: strokeController.currentColor,
+                      width: strokeController.currentWidth,      
+                      eraser: strokeController.isEraser,
+                    );
+                    drawing.addPoint(ll);
+                  },
+                  onPanUpdate: (d) {
+                    final ll = _mapController.camera.screenOffsetToLatLng(d.localPosition);
+                    drawing.addPoint(ll);
+                  },
+                  onPanEnd: (_) => drawing.endStroke(),
+                  child: AnimatedBuilder(
+                    animation: drawing,
+                    builder: (_, _) => CustomPaint(
+                      painter: MapStrokesPainter(
+                        camera: _mapController.camera,
+                        strokes: drawing.strokes,
+                        current: drawing.current,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ],
+            ),
           ),
-        ],
-      );
+      ],
+    );
   }
 }

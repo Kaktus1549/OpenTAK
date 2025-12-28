@@ -7,23 +7,27 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 import 'package:opentak_app/widgets/_zoom_slider.dart';
+import 'package:provider/provider.dart';
 
-class _MapDownloadState {
+class MapDownloadState {
   final Stream<DownloadProgress> stream;
   final String storeId;
   final Object instanceId;
   final List<String> downloadedMaps;
   final void Function(String key) onComplete;
   final Future<void> Function(String key) deletePresetMap;
+  final BuildContext context;
   bool paused = false;
+  double lastProgress = 0.0;
 
-  _MapDownloadState({
+  MapDownloadState({
     required this.stream,
     required this.storeId,
     required this.instanceId,
     required this.downloadedMaps,
     required this.onComplete,
     required this.deletePresetMap,
+    required this.context,
   });
 }
 
@@ -31,12 +35,14 @@ class PredefinedMapsSettingsPage extends StatefulWidget {
   final dynamic downloadedMaps;
   final void Function(String key) onComplete;
   final Future<void> Function(String key) deletePresetMap;
+  final BuildContext context;
 
   const PredefinedMapsSettingsPage({
     super.key,
     required this.downloadedMaps,
     required this.onComplete,
     required this.deletePresetMap,
+    required this.context,
   });
 
   @override
@@ -49,7 +55,7 @@ class _PredefinedMapsSettingsPageState extends State<PredefinedMapsSettingsPage>
   int minZoom = 1;
   int maxZoom = 18;
 
-  final Map<String, _MapDownloadState> _downloads = {};
+  late Map<String, MapDownloadState> _downloads = {};
 
   String _mapKey(String id, String name) => '$id:$name';
 
@@ -60,6 +66,7 @@ class _PredefinedMapsSettingsPageState extends State<PredefinedMapsSettingsPage>
   void initState(){
     super.initState();
     _loadPreferences();
+    _downloads = context.read<Map<String, MapDownloadState>>();
   }
 
   Future<void> _loadPreferences() async {
@@ -136,15 +143,17 @@ class _PredefinedMapsSettingsPageState extends State<PredefinedMapsSettingsPage>
             region: downloadableRegion,
             instanceId: id,
           );
+      final broadcastProgress = downloadProgress.asBroadcastStream();
 
       setState(() {
-        _downloads[key] = _MapDownloadState(
-          stream: downloadProgress,
+        _downloads[key] = MapDownloadState(
+          stream: broadcastProgress,
           storeId: storeName,
           instanceId: id,
           downloadedMaps: widget.downloadedMaps,
           onComplete: widget.onComplete,
           deletePresetMap: widget.deletePresetMap,
+          context: context,
         );
       });
     } catch (error) {
@@ -220,7 +229,15 @@ class _PredefinedMapsSettingsPageState extends State<PredefinedMapsSettingsPage>
       return StreamBuilder<DownloadProgress>(
         stream: downloadState.stream,
         builder: (context, snapshot) {
-        final progress = (snapshot.data?.percentageProgress ?? 0).clamp(0, 100);
+        double progress;
+
+        if (snapshot.hasData) {
+          progress = (snapshot.data!.percentageProgress).clamp(0, 100);
+          downloadState.lastProgress = progress;
+        } else {
+          progress = downloadState.lastProgress;
+        }
+
         // auto-clean when done
         if (progress == 100 && _downloads.containsKey(key)) {
           Future.microtask(() {

@@ -149,6 +149,7 @@ class _OfflineMapsSettingsPageState extends State<OfflineMapsSettingsPage> {
                             downloadedMaps: _downloadedMaps,
                             onComplete: _onComplete,
                             deletePresetMap: _deletePresetMap,
+                            context: context,
                           ),
                     ),
                   );

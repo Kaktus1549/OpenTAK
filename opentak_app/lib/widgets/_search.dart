@@ -17,7 +17,6 @@ class _SearchBarState extends State<SearchBar> {
 
     return Row(
       children: [
-        // 🔍 Search Bar
         Expanded(
           child: Container(
             height: 40,

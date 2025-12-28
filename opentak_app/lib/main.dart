@@ -4,9 +4,10 @@ import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 import 'package:opentak_app/db/app_database.dart';
 import 'package:provider/provider.dart';
 import 'package:opentak_app/save_data/_file_save.dart';
-
+import 'package:opentak_app/settings/_predefined_maps.dart';
 import 'package:opentak_app/models/_custom_map_overlay.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:opentak_app/drawing/_paint_notifiers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,7 +15,12 @@ void main() async {
   final database = AppDatabase();
   final storage = MapStorage();
 
+  Map<String, MapDownloadState> downloads = {};
+
   await FMTCStore('mapStore').manage.create();
+
+  MapStrokeController strokeController = MapStrokeController(currentColor: Colors.red, currentWidth: 4.0, isEraser: false);
+
 
   await Testing.testFunc(storage, database);
 
@@ -23,6 +29,9 @@ void main() async {
       providers: [
         Provider<AppDatabase>.value(value: database),
         Provider<MapStorage>.value(value: storage),
+        Provider<Map<String, MapDownloadState>>.value(value: downloads),
+        ChangeNotifierProvider(create: (_) => DrawingController()),
+        ChangeNotifierProvider<MapStrokeController>.value(value: strokeController),
       ],
       child: const MyApp(),
     ),
