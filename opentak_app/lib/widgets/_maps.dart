@@ -9,6 +9,8 @@ import 'package:provider/provider.dart';
 import 'package:opentak_app/save_data/_file_save.dart';
 import 'package:opentak_app/drawing/_paint_notifiers.dart';
 import 'package:opentak_app/drawing/_painter.dart';
+import 'package:opentak_app/points/_point.dart';
+import 'package:opentak_app/points/_pointMarker.dart';
 
 
 class MapWidget extends StatefulWidget {
@@ -66,6 +68,15 @@ class _MapWidgetState extends State<MapWidget> {
 
   late DrawingController drawing;
 
+  final List<Point> points = [];
+  late String? selectedPointName;
+
+  void _setSelectedPoint(String? name) {
+    setState(() {
+      selectedPointName = name;
+    });
+  }
+
   Future<void> _loadDownloadedMaps() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -118,7 +129,14 @@ class _MapWidgetState extends State<MapWidget> {
 
   }
   
-  void _handleTap() {
+  void _handleTap(TapPosition tapPosition, LatLng point) {
+    if (_drawMode) return;
+    if (selectedPointName != null) {
+      setState(() {
+        points.add(Point(location: point, name: selectedPointName!));
+      });
+      return;
+    }
     if (widget.onTap != null && !widget.slidingPanelUp) {
       widget.onTap!();
       return;
@@ -140,6 +158,12 @@ class _MapWidgetState extends State<MapWidget> {
       if (mounted) setState(() => _mapReady = true);
     });
 
+    
+    selectedPointName = context.read<SelectedPointNotifier>().name;
+    context.read<SelectedPointNotifier>().addListener(() {
+      _setSelectedPoint(context.read<SelectedPointNotifier>().name);
+    });
+
     MapStrokeController strokeController = context.read<MapStrokeController>();
     _drawMode = strokeController.isDrawingEnabled;
     strokeController.addListener(() {
@@ -150,7 +174,6 @@ class _MapWidgetState extends State<MapWidget> {
     customOverlay = CustomMapOverlay(floorList: [ firstFloor, secondFloor ], floorHeight: 3.0, baseHeight: 0.0, buildingID: 1, name: "Test Building");
     _loadDownloadedMaps();
   }
-
 
   @override
   void didUpdateWidget(MapWidget oldWidget) {
@@ -187,7 +210,7 @@ class _MapWidgetState extends State<MapWidget> {
           options: MapOptions(
             initialCenter: LatLng(widget.latitude, widget.longitude),
             initialZoom: mapZoomLevel,
-            onTap: (tapPosition, point) => _handleTap(),
+            onTap: (tapPosition, point) => _handleTap(tapPosition, point),
 
             interactionOptions: InteractionOptions(
               flags: _drawMode
@@ -209,20 +232,46 @@ class _MapWidgetState extends State<MapWidget> {
             tileProvider: _tileProvider,
           ),
             if (_overlayImages.isNotEmpty) OverlayImageLayer(overlayImages: _overlayImages),
-            MarkerLayer(
-              markers: [
-                Marker(
-                  width: 40,
-                  height: 40,
-                  point: LatLng(widget.latitude, widget.longitude),
-                  child: const Icon(
-                    Icons.my_location,
-                    color: Colors.blue,
-                    size: 36,
-                  ),
-                ),
-              ],
-            ),
+            StreamBuilder(
+              stream: _mapController.mapEventStream,
+              builder: (_, __) {
+                final zoom = _mapController.camera.zoom;
+                final size = sizeForZoom(zoom);
+                final showDeleteButton = zoom >= 15.0;
+
+                return MarkerLayer(
+                  markers: [
+                    Marker(
+                      width: 40,
+                      height: 40,
+                      point: LatLng(widget.latitude, widget.longitude),
+                      child: const Icon(
+                        Icons.my_location,
+                        color: Colors.blue,
+                        size: 36,
+                      ),
+                    ),
+
+                    ...points.map((point) => Marker(
+                      width: 40,
+                      height: 40,
+                      point: point.location,
+                      alignment: Alignment.center,
+                      child: DeletablePointMarker(
+                        point: point,
+                        iconSize: size,
+                        showDeleteButton: showDeleteButton,
+                        onDelete: () {
+                        setState(() {
+                          points.removeWhere((x) => x.id == point.id);
+                        });
+                      },
+                      ),
+                      )),
+                  ],
+                );
+              },
+            ),  
           ],
         ),
 

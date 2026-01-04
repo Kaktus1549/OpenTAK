@@ -46,7 +46,7 @@ class BottomBarItemModel {
     this.iconData,
   });
 
-  static List<BottomBarItemModel> getItems(BuildContext context, void Function() drawingCallback, {bool moreItems = false}) {
+  static List<BottomBarItemModel> getItems(BuildContext context, void Function() drawingCallback, void Function(String? name) pointCallback, {bool moreItems = false}) {
 
     List<BottomBarItemModel> items = [
       BottomBarItemModel(
@@ -61,16 +61,25 @@ class BottomBarItemModel {
         iconPath: 'assets/icons/testIcon.svg',
         label: 'Test2',
         backgroundColor: Colors.black,
+        onTap: () => {
+          pointCallback('testIcon'),
+        },
       ),
       BottomBarItemModel(
         iconPath: 'assets/icons/testIcon.svg',
         label: 'Test3',
         backgroundColor: Colors.black,
+        onTap: () => {
+          pointCallback('testIcon'),
+        },
       ),
       BottomBarItemModel(
         iconPath: 'assets/icons/testIcon.svg',
         label: 'Test4',
         backgroundColor: Colors.black,
+        onTap: () => {
+          pointCallback('testIcon'),
+        },
       )
     ];
 
@@ -80,11 +89,17 @@ class BottomBarItemModel {
           iconPath: 'assets/icons/testIcon.svg',
           label: 'Test5',
           backgroundColor: Colors.black,
+          onTap: () => {
+            pointCallback('testIcon'),
+          },
         ),
         BottomBarItemModel(
           iconPath: 'assets/icons/testIcon.svg',
           label: 'Test6',
           backgroundColor: Colors.black,
+          onTap: () => {
+            pointCallback('testIcon'),
+          },
         ),
       ]);
     }

@@ -8,6 +8,7 @@ import 'package:opentak_app/settings/_predefined_maps.dart';
 import 'package:opentak_app/models/_custom_map_overlay.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:opentak_app/drawing/_paint_notifiers.dart';
+import 'package:opentak_app/points/_point.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,11 +17,9 @@ void main() async {
   final storage = MapStorage();
 
   Map<String, MapDownloadState> downloads = {};
-
   await FMTCStore('mapStore').manage.create();
 
   MapStrokeController strokeController = MapStrokeController(currentColor: Colors.red, currentWidth: 4.0, isEraser: false);
-
 
   await Testing.testFunc(storage, database);
 
@@ -32,6 +31,7 @@ void main() async {
         Provider<Map<String, MapDownloadState>>.value(value: downloads),
         ChangeNotifierProvider(create: (_) => DrawingController()),
         ChangeNotifierProvider<MapStrokeController>.value(value: strokeController),
+        ChangeNotifierProvider<SelectedPointNotifier>.value(value: SelectedPointNotifier()),
       ],
       child: const MyApp(),
     ),

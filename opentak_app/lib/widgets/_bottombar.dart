@@ -4,6 +4,7 @@ import 'package:opentak_app/models/_bottombaritem.dart';
 import 'package:opentak_app/Utils/_utils.dart';
 import 'package:provider/provider.dart';
 import 'package:opentak_app/drawing/_paint_notifiers.dart';
+import 'package:opentak_app/points/_point.dart';
 
 
 class BottomNavigationBar extends StatefulWidget {
@@ -66,13 +67,30 @@ class _BottomNavigationBarState extends State<BottomNavigationBar> {
     );
   }
 
+  void _setSelectedPoint(String? name) {
+    SelectedPointNotifier selectedPointNotifier = context.read<SelectedPointNotifier>();
+    selectedPointNotifier.setName(name);
 
+    setState(() {
+      if (name != null) {
+        closeButtonVisible = true;
+        // Remove 'All Icons' button when a point is selected
+        items = BottomBarItemModel.getItems(context, _openDrawingMenu, _setSelectedPoint, moreItems: tabletOrLandscaped);
+      }
+    });
+  }
+  
   void close(){
     MapStrokeController strokeController = context.read<MapStrokeController>();
+    String? selectedPointName = context.read<SelectedPointNotifier>().name;
     setState(() {
+      if (selectedPointName != null) {
+        context.read<SelectedPointNotifier>().setName(null);
+      }
+
       closeButtonVisible = false;
       strokeController.setDrawingEnabled(false);
-      items = BottomBarItemModel.getItems(context, _openDrawingMenu, moreItems: tabletOrLandscaped);
+      items = BottomBarItemModel.getItems(context, _openDrawingMenu, _setSelectedPoint, moreItems: tabletOrLandscaped);
       items.add(
         BottomBarItemModel(
           iconPath: 'assets/icons/moreIcons.svg',
@@ -111,7 +129,7 @@ class _BottomNavigationBarState extends State<BottomNavigationBar> {
   }
 
   void _loadItems() {
-    items = BottomBarItemModel.getItems(context, _openDrawingMenu, moreItems: tabletOrLandscaped);
+    items = BottomBarItemModel.getItems(context, _openDrawingMenu, _setSelectedPoint, moreItems: tabletOrLandscaped);
     items.add(
       BottomBarItemModel(
         iconPath: 'assets/icons/moreIcons.svg',
