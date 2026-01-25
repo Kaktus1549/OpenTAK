@@ -1,0 +1,25 @@
+services:
+  mqtt-broker:
+    image: rmqtt/rmqtt:latest
+    container_name: opentak_mqtt_broker
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "8883:8883"
+
+  mysql-db:
+    image: mysql:latest
+    container_name: opentak_mysql_db
+    restart: unless-stopped
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: 1
+      MYSQL_USER: ${DATABASE_USER}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
+      MYSQL_DATABASE: opentak
+    volumes:
+      - db-data2:/var/lib/mysql
+    ports:
+      - "3307:3306"
+
+volumes:
+  db-data2:
