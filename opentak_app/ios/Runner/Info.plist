@@ -61,6 +61,11 @@
 	<string>This app requires continuous access to your location even when running in the background.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>This app uses motion data to determine device heading and orientation.</string>
-
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Looking for local tcp Bonjour service</string>
+	<key>NSBonjourServices</key>
+	<array>
+	<string>mqtt.tcp</string>
+	</array>
 </dict>
 </plist>

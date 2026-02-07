@@ -1,4 +1,6 @@
 import 'package:opentak_app/models/enums/_map_types.dart';
+import 'package:opentak_app/Utils/_web.dart';
+import 'dart:convert';
 
 class PresetMap {
   final String name;
@@ -91,48 +93,57 @@ class PresetMap {
   }
 
   /// Dummy presets: rough rectangles around each city
-  static List<PresetMap> dummies() {
-    return [
-      PresetMap(
-        name: 'Prague',
-        id: 'offline_prague',
-        type: CustomMapType.rectangle,
-        coordinates: [
-          [50.02, 14.30],
-          [50.12, 14.60],
-        ],
-        radius: null,
-      ),
-      PresetMap(
-        name: 'Pardubice',
-        id: 'offline_pardubice',
-        type: CustomMapType.rectangle,
-        coordinates: [
-          [49.99, 15.73],
-          [50.06, 15.84],
-        ],
-        radius: null,
-      ),
-      PresetMap(
-        name: 'Lysa nad Labem',
-        id: 'offline_lysa_nad_labem',
-        type: CustomMapType.rectangle,
-        coordinates: [
-          [50.17, 14.81], 
-          [50.23, 14.87], 
-        ],
-        radius: null,
-      ),
-      PresetMap(
-        name: 'City Map',
-        id: 'offline_city_map',
-        type: CustomMapType.rectangle,
-        coordinates: [
-          [52.17, 14.81], 
-          [53.23, 15.87], 
-        ],
-        radius: null,
-      ),
-    ];
+  static Future<List<PresetMap>> getMaps(String? serverUrl, String? authToken) async {
+    List<PresetMap> dummyMaps = [
+        PresetMap(
+          name: 'Prague',
+          id: 'offline_prague',
+          type: CustomMapType.rectangle,
+          coordinates: [
+            [50.02, 14.30],
+            [50.12, 14.60],
+          ],
+          radius: null,
+        ),
+        PresetMap(
+          name: 'Pardubice',
+          id: 'offline_pardubice',
+          type: CustomMapType.rectangle,
+          coordinates: [
+            [49.99, 15.73],
+            [50.06, 15.84],
+          ],
+          radius: null,
+        ),
+        PresetMap(
+          name: 'Lysa nad Labem',
+          id: 'offline_lysa_nad_labem',
+          type: CustomMapType.rectangle,
+          coordinates: [
+            [50.17, 14.81], 
+            [50.23, 14.87], 
+          ],
+          radius: null,
+        ),
+        PresetMap(
+          name: 'City Map',
+          id: 'offline_city_map',
+          type: CustomMapType.rectangle,
+          coordinates: [
+            [52.17, 14.81], 
+            [53.23, 15.87], 
+          ],
+          radius: null,
+        ),
+      ];
+    if (serverUrl == null || authToken == null) {
+      return dummyMaps;
+    } else {
+      OpenTAKHTTPClient client = OpenTAKHTTPClient(serverUrl: serverUrl, authToken: authToken);
+      // Get maps from server and convert them to PresetMap instances
+      final response = await client.getAvailableMaps();
+      List<PresetMap> serverMaps = response.map((mapData) => PresetMap.fromJson(jsonDecode(mapData) as Map<String, dynamic>)).toList();
+      return [...dummyMaps, ...serverMaps];
+    }
   }
 }

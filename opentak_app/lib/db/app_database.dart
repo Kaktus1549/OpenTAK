@@ -39,8 +39,22 @@ class FloorOverlayRows extends Table {
   IntColumn get floorNumber => integer()();
 }
 
+class UserSettings extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get username => text()();
+  TextColumn get email => text()();
+  TextColumn get serverUrl => text()();
+  TextColumn get authToken => text()();
+  TextColumn get refreshToken => text()(); // For now its not implemented, but we can store it for later use
+}
 
-@DriftDatabase(tables: [BuildingRows, FloorOverlayRows])
+class DownloadedOfflineMaps extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get mapId => text()(); // e.g. "preset1" or "custom3"
+  TextColumn get mapName => text()(); // e.g. "City Center Map"
+}
+
+@DriftDatabase(tables: [BuildingRows, FloorOverlayRows, UserSettings, DownloadedOfflineMaps])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
@@ -49,7 +63,7 @@ class AppDatabase extends _$AppDatabase {
 
   static QueryExecutor _openConnection() {
     return driftDatabase(
-      name: 'my_database',
+      name: 'OpenTAKDb',
       native: const DriftNativeOptions(
         databaseDirectory: getApplicationSupportDirectory,
       ),
@@ -199,6 +213,92 @@ class AppDatabase extends _$AppDatabase {
     }
 
     return result;
+  }
+
+  // ---------- USER SETTINGS ---------- 
+
+  Future<int> insertOrUpdateUserSettings({
+    String? username,
+    String? email,
+    String? serverUrl,
+    String? authToken,
+    String? refreshToken,
+  }) async {
+    final existing = await select(userSettings).getSingleOrNull();
+
+    if (existing == null) {
+      if (username == null || email == null || serverUrl == null || authToken == null || refreshToken == null) {
+        throw ArgumentError('All fields must be provided for initial insert');
+      }
+      final companion = UserSettingsCompanion.insert(
+        username: username,
+        email: email,
+        serverUrl: serverUrl,
+        authToken: authToken,
+        refreshToken: refreshToken,
+      );
+      return into(userSettings).insert(companion);
+    } else {
+      final companion = UserSettingsCompanion(
+        id: Value(existing.id),
+        username: username != null && username.isNotEmpty ? Value(username) : Value(existing.username),
+        email: email != null && email.isNotEmpty ? Value(email) : Value(existing.email),
+        serverUrl: serverUrl != null && serverUrl.isNotEmpty ? Value(serverUrl) : Value(existing.serverUrl),
+        authToken: authToken != null && authToken.isNotEmpty ? Value(authToken) : Value(existing.authToken),
+        refreshToken: refreshToken != null && refreshToken.isNotEmpty ? Value(refreshToken) : Value(existing.refreshToken),
+      );
+      await update(userSettings).replace(companion);
+      return existing.id;
+    }
+  }
+
+  Future<String?> getAuthToken() async {
+    final settings = await select(userSettings).getSingleOrNull();
+    return settings?.authToken;
+  }
+
+  Future<String?> getRefreshToken() async {
+    final settings = await select(userSettings).getSingleOrNull();
+    return settings?.refreshToken;
+  }
+
+  Future<String?> getUsername() async {
+    final settings = await select(userSettings).getSingleOrNull();
+    return settings?.username;
+  }
+
+  Future<String?> getEmail() async {
+    final settings = await select(userSettings).getSingleOrNull();
+    return settings?.email;
+  }
+
+  Future<String?> getServerUrl() async {
+    final settings = await select(userSettings).getSingleOrNull();
+    return settings?.serverUrl;
+  }
+
+
+  // ---------- DOWNLOADED OFFLINE MAPS ----------
+
+  Future<int> insertDownloadedMap(String mapIdAndName) async {
+    final parts = mapIdAndName.split(':');
+    final mapId = parts[0];
+    final mapName = parts[1];
+    final companion = DownloadedOfflineMapsCompanion.insert(
+      mapId: mapId,
+      mapName: mapName,
+    );
+    return into(downloadedOfflineMaps).insert(companion);
+  }
+
+  Future<void> deleteDownloadedMap(String mapId) async {
+    await (delete(downloadedOfflineMaps)..where((m) => m.mapId.equals(mapId))).go();
+  }
+
+  // Returns list of "mapId:mapName"
+  Future<List<String>> getDownloadedMaps() async {
+    final maps = await select(downloadedOfflineMaps).get();
+    return maps.map((m) => '${m.mapId}:${m.mapName}').toList();
   }
 
 }

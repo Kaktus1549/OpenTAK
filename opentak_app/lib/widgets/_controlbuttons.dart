@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:opentak_app/models/enums/_nav_status.dart';
 import 'package:opentak_app/pages/settings.dart';
+import 'package:opentak_app/db/app_database.dart';
+import 'package:provider/provider.dart';
 
 
 
@@ -79,7 +81,7 @@ class SettingsButton extends StatelessWidget {
       onPressed: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const SettingsPage()),
+          MaterialPageRoute(builder: (context) => SettingsPage(db: context.read<AppDatabase>())),
         );
       },
     );

@@ -1,11 +1,14 @@
 import 'package:settings_ui/settings_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opentak_app/settings/_predefined_maps.dart';
+import 'package:opentak_app/db/app_database.dart';
 import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
+import 'package:provider/provider.dart';
 
-class OfflineMapsSettingsPage extends StatefulWidget {
-  const OfflineMapsSettingsPage({super.key});
+class OfflineMapsSettingsPage extends StatefulWidget{
+  const OfflineMapsSettingsPage({super.key, required this.context});
+
+  final BuildContext context;
 
   @override
   State<OfflineMapsSettingsPage> createState() =>
@@ -13,21 +16,22 @@ class OfflineMapsSettingsPage extends StatefulWidget {
 }
 
 class _OfflineMapsSettingsPageState extends State<OfflineMapsSettingsPage> {
-  late SharedPreferences _prefs;
+  late BuildContext context;
   bool _prefsLoaded = false;
   List<String> _downloadedMaps = [];
 
   @override
   void initState() {
     super.initState();
+    context = widget.context;
     _loadPrefs();
   }
 
   Future<void> _loadPrefs() async {
-    _prefs = await SharedPreferences.getInstance();
+    final db = context.read<AppDatabase>();
+    final downloadedMaps = await db.getDownloadedMaps();
     setState(() {
-      _downloadedMaps =
-          _prefs.getStringList('downloaded_offline_maps') ?? [];
+      _downloadedMaps = downloadedMaps;
       _prefsLoaded = true;
     });
   }
@@ -37,11 +41,12 @@ class _OfflineMapsSettingsPageState extends State<OfflineMapsSettingsPage> {
     final store = FMTCStore(storeName);
 
     try {
-      
+      final db = context.read<AppDatabase>();
+      await db.deleteDownloadedMap(id);
       setState(() {
         // List: "id:mapName"
         _downloadedMaps.removeWhere((element) => element.startsWith('$id:'));
-        _prefs.setStringList('downloaded_offline_maps', _downloadedMaps);
+
       });
 
       if (await store.manage.ready) {
@@ -61,12 +66,13 @@ class _OfflineMapsSettingsPageState extends State<OfflineMapsSettingsPage> {
     }
   }
 
-  void _onComplete(String key) {
+  Future<void> _onComplete(String key) async {
     if (!_downloadedMaps.contains(key)) {
       if (!mounted) return;
+      final db = context.read<AppDatabase>();
+      await db.insertDownloadedMap(key);
       setState(() {
         _downloadedMaps.add(key);
-        _prefs.setStringList('downloaded_offline_maps', _downloadedMaps);
       });
       
     }

@@ -6,7 +6,8 @@ class StatusWidget extends StatelessWidget {
   final double lon;
   final double altitude;
   final bool gpsConnected;
-  const StatusWidget({super.key, required this.lat, required this.lon, required this.altitude, required this.gpsConnected});
+  final String username;
+  const StatusWidget({super.key, required this.lat, required this.lon, required this.altitude, required this.gpsConnected, required this.username});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +23,7 @@ class StatusWidget extends StatelessWidget {
           // GPS Signal Status will be at the top right corner of the container
           Positioned(top: 4, right: 8, child: GPSSignalStatus(gpsConnected: gpsConnected)),
           // User stats will be at the top left corner of the container
-          Positioned(top: 8, left: 8, child: UserStats(username: 'User123', teamName: 'Team Alpha')),
+          Positioned(top: 8, left: 8, child: UserStats(username: username, teamName: 'Team Alpha')),
           // GPS stats will be at the bottom left corner of the container
           Positioned(bottom: 8, left: 8, child: GPSStats(latitude: lat, longitude: lon, altitude: altitude)),
         ],

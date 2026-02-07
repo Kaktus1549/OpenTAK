@@ -13,6 +13,9 @@
     "allowImportingTsExtensions": true,
     "noEmit": true,
 
+    //@types
+    "typeRoots": ["./node_modules/@types", "./src/types", "./types"],
+
     // Best practices
     "strict": true,
     "skipLibCheck": true,

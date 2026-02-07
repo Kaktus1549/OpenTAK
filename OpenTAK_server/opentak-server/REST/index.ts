@@ -69,7 +69,7 @@ app.post("/login", async (req: Request, res: Response) => {
         return res.status(401).json({ error: "Invalid username or password" });
     }
 
-    const passwordValid = await verifyPassword(password, user.hashedPassword);
+    const passwordValid = await verifyPassword(user.hashedPassword, password);
     if (!passwordValid) {
         return res.status(401).json({ error: "Invalid username or password" });
     }

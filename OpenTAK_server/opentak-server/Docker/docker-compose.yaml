@@ -1,25 +1,44 @@
 services:
   mqtt-broker:
     image: rmqtt/rmqtt:latest
-    container_name: opentak_mqtt_broker
     restart: unless-stopped
     ports:
       - "1883:1883"
       - "8883:8883"
 
   mysql-db:
-    image: mysql:latest
-    container_name: opentak_mysql_db
+    image: mariadb:11
+    restart: unless-stopped
+    ports:
+      - "${HOST_DB_PORT}:3306"
+    environment:
+      MARIADB_ROOT_PASSWORD: rootpass
+      MARIADB_DATABASE: ${DATABASE_NAME}
+      MARIADB_USER: ${DATABASE_USER}
+      MARIADB_PASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - db-opentak:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-uroot", "-prootpass"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  backend:
+    build: ../REST/.
     restart: unless-stopped
     environment:
-      MYSQL_RANDOM_ROOT_PASSWORD: 1
-      MYSQL_USER: ${DATABASE_USER}
-      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
-      MYSQL_DATABASE: opentak
-    volumes:
-      - db-data2:/var/lib/mysql
+      DATABASE_URL: ${DATABASE_URL}
+      MASTER_USER: ${MASTER_USER}
+      MASTER_PASSWORD: ${MASTER_PASSWORD}
+      MQTT_BROKER_HOST: ${MQTT_BROKER_HOST}
     ports:
-      - "3307:3306"
+      - "${HOST_API_PORT}:3000"
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      mqtt-broker:
+        condition: service_started
 
 volumes:
-  db-data2:
+  db-opentak:

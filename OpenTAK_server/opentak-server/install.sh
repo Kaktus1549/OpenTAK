@@ -1,63 +1,108 @@
 #!/bin/bash
-
-base64 -d <<< "ICBfX18gICAgICAgICAgICAgICAgIF9fX19fICBfICAgIF8gIF9fICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogLyBfIFwgXyBfXyAgIF9fXyBfIF98XyAgIF98LyBcICB8IHwvIC8gIF9fXyAgX19fIF8gX19fXyAgIF9fX19fIF8gX18gCnwgfCB8IHwgJ18gXCAvIF8gXCAnXyBcfCB8IC8gXyBcIHwgJyAvICAvIF9ffC8gXyBcICdfX1wgXCAvIC8gXyBcICdfX3wKfCB8X3wgfCB8XykgfCAgX18vIHwgfCB8IHwvIF9fXyBcfCAuIFwgIFxfXyBcICBfXy8gfCAgIFwgViAvICBfXy8gfCAgIAogXF9fXy98IC5fXy8gXF9fX3xffCB8X3xfL18vICAgXF9cX3xcX1wgfF9fXy9cX19ffF98ICAgIFxfLyBcX19ffF98ICAgCiAgICAgIHxffCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA="
+set -euo pipefail
 
 echo " ---------- Install script ----------"
-
 echo "Welcome to the OpenTAK server installation script!"
 echo "This script will guide you through the installation process."
-echo "Please make sure you have Docker and Docker Compose installed. If you want leave default values, just press Enter."
+echo "Make sure Docker + Docker Compose are installed."
 echo ""
 
 echo " ---------- Configuration ----------"
 
-read -p "Enter the port for the docker container (default: 1569): " DOCKER_PORT
-DOCKER_PORT=${DOCKER_PORT:-1569}
-read -p "Enter address for the MySQL server (default: localhost): " MYSQL_HOST
-MYSQL_HOST=${MYSQL_HOST:-localhost}
-read -p "Enter the port where MySQL server is running (default: 3306): " MYSQL_PORT
-MYSQL_PORT=${MYSQL_PORT:-3306}
-read -p "Enter the MySQL user (default default): " MYSQL_USER
-MYSQL_USER=${MYSQL_USER:-default}
-read -sp "Enter the MySQL password: " MYSQL_PASSWORD
-echo ""
-read -p "Enter the MySQL database (default: opentak): " MYSQL_DATABASE
-MYSQL_DATABASE=${MYSQL_DATABASE:-opentak}
+read -p "Enter the port for the REST API on the host (default: 8080): " HOST_API_PORT
+HOST_API_PORT=${HOST_API_PORT:-8080}
 
-clear
+read -p "Enter the MariaDB port on the host (default: 3307): " HOST_DB_PORT
+HOST_DB_PORT=${HOST_DB_PORT:-3307}
 
-base64 -d <<< "ICBfX18gICAgICAgICAgICAgICAgIF9fX19fICBfICAgIF8gIF9fICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogLyBfIFwgXyBfXyAgIF9fXyBfIF98XyAgIF98LyBcICB8IHwvIC8gIF9fXyAgX19fIF8gX19fXyAgIF9fX19fIF8gX18gCnwgfCB8IHwgJ18gXCAvIF8gXCAnXyBcfCB8IC8gXyBcIHwgJyAvICAvIF9ffC8gXyBcICdfX1wgXCAvIC8gXyBcICdfX3wKfCB8X3wgfCB8XykgfCAgX18vIHwgfCB8IHwvIF9fXyBcfCAuIFwgIFxfXyBcICBfXy8gfCAgIFwgViAvICBfXy8gfCAgIAogXF9fXy98IC5fXy8gXF9fX3xffCB8X3xfL18vICAgXF9cX3xcX1wgfF9fXy9cX19ffF98ICAgIFxfLyBcX19ffF98ICAgCiAgICAgIHxffCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA="
-echo " ---------- Master user ----------"
-echo "Now we will create the master admin user for the OpenTAK server."
-echo "This user will have full administrative privileges."
+read -p "Enter the database name (default: opentak): " DATABASE_NAME
+DATABASE_NAME=${DATABASE_NAME:-opentak}
+
+read -p "Enter the database user (default: default): " DATABASE_USER
+DATABASE_USER=${DATABASE_USER:-default}
+
+read -sp "Enter the database password (can be empty): " DATABASE_PASSWORD
 echo ""
 
-read -p "Enter the username for the master admin user (default: admin): " MASTER_USERNAME
-MASTER_USERNAME=${MASTER_USERNAME:-admin}
+read -p "Enter the username for the master admin user (default: admin): " MASTER_USER
+MASTER_USER=${MASTER_USER:-admin}
+
 read -sp "Enter the password for the master admin user: " MASTER_PASSWORD
 echo ""
 
-cat > ./REST/.env <<EOF
-DATABASE_URL="mysql://$MYSQL_USER:$MYSQL_PASSWORD@$MYSQL_HOST:$MYSQL_PORT/$MYSQL_DATABASE"
-DATABASE_HOST="$MYSQL_HOST"
-DATABASE_PORT="$MYSQL_PORT"
-DATABASE_USER="$MYSQL_USER"
-DATABASE_PASSWORD="$MYSQL_PASSWORD"
-DATABASE_NAME="$MYSQL_DATABASE"
+read -p "Enter MQTT broker URL (default: mqtt://mqtt.kaktusgame.eu:1883): " MQTT_BROKER_HOST
+MQTT_BROKER_HOST=${MQTT_BROKER_HOST:-mqtt://mqtt.kaktusgame.eu:1883}
 
-MASTER_USER="$MASTER_USERNAME"
-MASTER_PASSWORD="$MASTER_PASSWORD"
-EOF
+# IMPORTANT: inside Docker network, DB host is the service name:
+DATABASE_HOST=mysql-db
+DATABASE_PORT=3306
 
+# Build DATABASE_URL for Prisma/app
+# (Password may contain special chars; for full robustness you should URL-encode it.
+#  We'll do a safe encode via python3 if available.)
+ENCODED_PASSWORD="$DATABASE_PASSWORD"
+if command -v python3 >/dev/null 2>&1; then
+  ENCODED_PASSWORD="$(python3 - <<'PY'
+import os, urllib.parse
+print(urllib.parse.quote(os.environ["PW"], safe=""))
+PY
+PW="$DATABASE_PASSWORD")"
+fi
+
+DATABASE_URL="mysql://${DATABASE_USER}:${ENCODED_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}"
+
+echo ""
+echo " ---------- Writing env files ----------"
+
+mkdir -p ./Docker
+mkdir -p ./REST
+
+# Compose env (used by Docker/docker-compose.yml)
 cat > ./Docker/.env <<EOF
-DOCKER_PORT=$DOCKER_PORT
-DATABASE_USER=$MYSQL_USER
-DATABASE_PASSWORD=$MYSQL_PASSWORD
+# Ports on the host machine
+HOST_API_PORT=${HOST_API_PORT}
+HOST_DB_PORT=${HOST_DB_PORT}
+
+# Database config (container-to-container)
+DATABASE_NAME=${DATABASE_NAME}
+DATABASE_USER=${DATABASE_USER}
+DATABASE_PASSWORD=${DATABASE_PASSWORD}
+DATABASE_HOST=${DATABASE_HOST}
+DATABASE_PORT=${DATABASE_PORT}
+DATABASE_URL=${DATABASE_URL}
+
+# Master admin bootstrap
+MASTER_USER=${MASTER_USER}
+MASTER_PASSWORD=${MASTER_PASSWORD}
+
+# MQTT
+MQTT_BROKER_HOST=${MQTT_BROKER_HOST}
 EOF
 
-echo " ---------- Building the Docker container ----------"
+# Optional: also write REST/.env for running backend outside Docker
+cat > ./REST/.env <<EOF
+DATABASE_NAME=${DATABASE_NAME}
+DATABASE_USER=${DATABASE_USER}
+DATABASE_PASSWORD=${DATABASE_PASSWORD}
+DATABASE_HOST=localhost
+DATABASE_PORT=${HOST_DB_PORT}
+DATABASE_URL=mysql://${DATABASE_USER}:${ENCODED_PASSWORD}@localhost:${HOST_DB_PORT}/${DATABASE_NAME}
+
+MASTER_USER=${MASTER_USER}
+MASTER_PASSWORD=${MASTER_PASSWORD}
+
+MQTT_BROKER_HOST=${MQTT_BROKER_HOST}
+EOF
+
+echo "Wrote:"
+echo " - ./Docker/.env"
+echo " - ./REST/.env"
+echo ""
+
+echo " ---------- Starting containers ----------"
 cd Docker
 docker compose up -d --build
 
+echo ""
 echo " ---------- Installation complete ----------"
-exit 0
+echo "Backend should be reachable at: http://localhost:${HOST_API_PORT}"

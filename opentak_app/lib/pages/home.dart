@@ -10,6 +10,8 @@ import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:opentak_app/Utils/_location.dart';
 import 'package:opentak_app/models/enums/_nav_status.dart';
 import 'package:flutter_compass/flutter_compass.dart';
+import 'package:provider/provider.dart';
+import 'package:opentak_app/db/app_database.dart';
 import 'dart:io';
 
 class HomePage extends StatefulWidget {
@@ -29,6 +31,7 @@ class _HomePageState extends State<HomePage> {
   double lon = 0.0;
   double altitude = 0.0;
   double heading = 0.0;
+  String username = 'N/A';
 
   StreamSubscription<CompassEvent>? _headingSub;
   double? _smoothedHeading;
@@ -57,6 +60,23 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _startListeningToLocation();
     _startHeadingUpdates();
+    _loadUsername();
+    AppDatabase().getUsername().then((name) {
+      if (mounted) {
+        setState(() {
+          username = name ?? 'N/A';
+        });
+      }
+    });
+  }
+
+  Future<void> _loadUsername() async {
+    final name = await context.read<AppDatabase>().getUsername() ?? 'N/A';
+    if (mounted) {
+      setState(() {
+        username = name;
+      });
+    }
   }
 
   @override
@@ -240,6 +260,7 @@ class _HomePageState extends State<HomePage> {
               lon: lon,
               altitude: altitude,
               gpsConnected: gpsConnected,
+              username: username,
             ),
           ),
           Positioned(

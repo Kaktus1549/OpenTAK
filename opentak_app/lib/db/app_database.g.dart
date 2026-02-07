@@ -1140,6 +1140,660 @@ class FloorOverlayRowsCompanion extends UpdateCompanion<FloorOverlayRow> {
   }
 }
 
+class $UserSettingsTable extends UserSettings
+    with TableInfo<$UserSettingsTable, UserSetting> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UserSettingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _usernameMeta = const VerificationMeta(
+    'username',
+  );
+  @override
+  late final GeneratedColumn<String> username = GeneratedColumn<String>(
+    'username',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _emailMeta = const VerificationMeta('email');
+  @override
+  late final GeneratedColumn<String> email = GeneratedColumn<String>(
+    'email',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _serverUrlMeta = const VerificationMeta(
+    'serverUrl',
+  );
+  @override
+  late final GeneratedColumn<String> serverUrl = GeneratedColumn<String>(
+    'server_url',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _authTokenMeta = const VerificationMeta(
+    'authToken',
+  );
+  @override
+  late final GeneratedColumn<String> authToken = GeneratedColumn<String>(
+    'auth_token',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _refreshTokenMeta = const VerificationMeta(
+    'refreshToken',
+  );
+  @override
+  late final GeneratedColumn<String> refreshToken = GeneratedColumn<String>(
+    'refresh_token',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    username,
+    email,
+    serverUrl,
+    authToken,
+    refreshToken,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'user_settings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<UserSetting> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('username')) {
+      context.handle(
+        _usernameMeta,
+        username.isAcceptableOrUnknown(data['username']!, _usernameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_usernameMeta);
+    }
+    if (data.containsKey('email')) {
+      context.handle(
+        _emailMeta,
+        email.isAcceptableOrUnknown(data['email']!, _emailMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_emailMeta);
+    }
+    if (data.containsKey('server_url')) {
+      context.handle(
+        _serverUrlMeta,
+        serverUrl.isAcceptableOrUnknown(data['server_url']!, _serverUrlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_serverUrlMeta);
+    }
+    if (data.containsKey('auth_token')) {
+      context.handle(
+        _authTokenMeta,
+        authToken.isAcceptableOrUnknown(data['auth_token']!, _authTokenMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_authTokenMeta);
+    }
+    if (data.containsKey('refresh_token')) {
+      context.handle(
+        _refreshTokenMeta,
+        refreshToken.isAcceptableOrUnknown(
+          data['refresh_token']!,
+          _refreshTokenMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_refreshTokenMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  UserSetting map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return UserSetting(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      username: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}username'],
+      )!,
+      email: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}email'],
+      )!,
+      serverUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}server_url'],
+      )!,
+      authToken: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}auth_token'],
+      )!,
+      refreshToken: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}refresh_token'],
+      )!,
+    );
+  }
+
+  @override
+  $UserSettingsTable createAlias(String alias) {
+    return $UserSettingsTable(attachedDatabase, alias);
+  }
+}
+
+class UserSetting extends DataClass implements Insertable<UserSetting> {
+  final int id;
+  final String username;
+  final String email;
+  final String serverUrl;
+  final String authToken;
+  final String refreshToken;
+  const UserSetting({
+    required this.id,
+    required this.username,
+    required this.email,
+    required this.serverUrl,
+    required this.authToken,
+    required this.refreshToken,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['username'] = Variable<String>(username);
+    map['email'] = Variable<String>(email);
+    map['server_url'] = Variable<String>(serverUrl);
+    map['auth_token'] = Variable<String>(authToken);
+    map['refresh_token'] = Variable<String>(refreshToken);
+    return map;
+  }
+
+  UserSettingsCompanion toCompanion(bool nullToAbsent) {
+    return UserSettingsCompanion(
+      id: Value(id),
+      username: Value(username),
+      email: Value(email),
+      serverUrl: Value(serverUrl),
+      authToken: Value(authToken),
+      refreshToken: Value(refreshToken),
+    );
+  }
+
+  factory UserSetting.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return UserSetting(
+      id: serializer.fromJson<int>(json['id']),
+      username: serializer.fromJson<String>(json['username']),
+      email: serializer.fromJson<String>(json['email']),
+      serverUrl: serializer.fromJson<String>(json['serverUrl']),
+      authToken: serializer.fromJson<String>(json['authToken']),
+      refreshToken: serializer.fromJson<String>(json['refreshToken']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'username': serializer.toJson<String>(username),
+      'email': serializer.toJson<String>(email),
+      'serverUrl': serializer.toJson<String>(serverUrl),
+      'authToken': serializer.toJson<String>(authToken),
+      'refreshToken': serializer.toJson<String>(refreshToken),
+    };
+  }
+
+  UserSetting copyWith({
+    int? id,
+    String? username,
+    String? email,
+    String? serverUrl,
+    String? authToken,
+    String? refreshToken,
+  }) => UserSetting(
+    id: id ?? this.id,
+    username: username ?? this.username,
+    email: email ?? this.email,
+    serverUrl: serverUrl ?? this.serverUrl,
+    authToken: authToken ?? this.authToken,
+    refreshToken: refreshToken ?? this.refreshToken,
+  );
+  UserSetting copyWithCompanion(UserSettingsCompanion data) {
+    return UserSetting(
+      id: data.id.present ? data.id.value : this.id,
+      username: data.username.present ? data.username.value : this.username,
+      email: data.email.present ? data.email.value : this.email,
+      serverUrl: data.serverUrl.present ? data.serverUrl.value : this.serverUrl,
+      authToken: data.authToken.present ? data.authToken.value : this.authToken,
+      refreshToken: data.refreshToken.present
+          ? data.refreshToken.value
+          : this.refreshToken,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserSetting(')
+          ..write('id: $id, ')
+          ..write('username: $username, ')
+          ..write('email: $email, ')
+          ..write('serverUrl: $serverUrl, ')
+          ..write('authToken: $authToken, ')
+          ..write('refreshToken: $refreshToken')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, username, email, serverUrl, authToken, refreshToken);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UserSetting &&
+          other.id == this.id &&
+          other.username == this.username &&
+          other.email == this.email &&
+          other.serverUrl == this.serverUrl &&
+          other.authToken == this.authToken &&
+          other.refreshToken == this.refreshToken);
+}
+
+class UserSettingsCompanion extends UpdateCompanion<UserSetting> {
+  final Value<int> id;
+  final Value<String> username;
+  final Value<String> email;
+  final Value<String> serverUrl;
+  final Value<String> authToken;
+  final Value<String> refreshToken;
+  const UserSettingsCompanion({
+    this.id = const Value.absent(),
+    this.username = const Value.absent(),
+    this.email = const Value.absent(),
+    this.serverUrl = const Value.absent(),
+    this.authToken = const Value.absent(),
+    this.refreshToken = const Value.absent(),
+  });
+  UserSettingsCompanion.insert({
+    this.id = const Value.absent(),
+    required String username,
+    required String email,
+    required String serverUrl,
+    required String authToken,
+    required String refreshToken,
+  }) : username = Value(username),
+       email = Value(email),
+       serverUrl = Value(serverUrl),
+       authToken = Value(authToken),
+       refreshToken = Value(refreshToken);
+  static Insertable<UserSetting> custom({
+    Expression<int>? id,
+    Expression<String>? username,
+    Expression<String>? email,
+    Expression<String>? serverUrl,
+    Expression<String>? authToken,
+    Expression<String>? refreshToken,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (username != null) 'username': username,
+      if (email != null) 'email': email,
+      if (serverUrl != null) 'server_url': serverUrl,
+      if (authToken != null) 'auth_token': authToken,
+      if (refreshToken != null) 'refresh_token': refreshToken,
+    });
+  }
+
+  UserSettingsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? username,
+    Value<String>? email,
+    Value<String>? serverUrl,
+    Value<String>? authToken,
+    Value<String>? refreshToken,
+  }) {
+    return UserSettingsCompanion(
+      id: id ?? this.id,
+      username: username ?? this.username,
+      email: email ?? this.email,
+      serverUrl: serverUrl ?? this.serverUrl,
+      authToken: authToken ?? this.authToken,
+      refreshToken: refreshToken ?? this.refreshToken,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (username.present) {
+      map['username'] = Variable<String>(username.value);
+    }
+    if (email.present) {
+      map['email'] = Variable<String>(email.value);
+    }
+    if (serverUrl.present) {
+      map['server_url'] = Variable<String>(serverUrl.value);
+    }
+    if (authToken.present) {
+      map['auth_token'] = Variable<String>(authToken.value);
+    }
+    if (refreshToken.present) {
+      map['refresh_token'] = Variable<String>(refreshToken.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserSettingsCompanion(')
+          ..write('id: $id, ')
+          ..write('username: $username, ')
+          ..write('email: $email, ')
+          ..write('serverUrl: $serverUrl, ')
+          ..write('authToken: $authToken, ')
+          ..write('refreshToken: $refreshToken')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DownloadedOfflineMapsTable extends DownloadedOfflineMaps
+    with TableInfo<$DownloadedOfflineMapsTable, DownloadedOfflineMap> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DownloadedOfflineMapsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _mapIdMeta = const VerificationMeta('mapId');
+  @override
+  late final GeneratedColumn<String> mapId = GeneratedColumn<String>(
+    'map_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mapNameMeta = const VerificationMeta(
+    'mapName',
+  );
+  @override
+  late final GeneratedColumn<String> mapName = GeneratedColumn<String>(
+    'map_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, mapId, mapName];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'downloaded_offline_maps';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DownloadedOfflineMap> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('map_id')) {
+      context.handle(
+        _mapIdMeta,
+        mapId.isAcceptableOrUnknown(data['map_id']!, _mapIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_mapIdMeta);
+    }
+    if (data.containsKey('map_name')) {
+      context.handle(
+        _mapNameMeta,
+        mapName.isAcceptableOrUnknown(data['map_name']!, _mapNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_mapNameMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DownloadedOfflineMap map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DownloadedOfflineMap(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      mapId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}map_id'],
+      )!,
+      mapName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}map_name'],
+      )!,
+    );
+  }
+
+  @override
+  $DownloadedOfflineMapsTable createAlias(String alias) {
+    return $DownloadedOfflineMapsTable(attachedDatabase, alias);
+  }
+}
+
+class DownloadedOfflineMap extends DataClass
+    implements Insertable<DownloadedOfflineMap> {
+  final int id;
+  final String mapId;
+  final String mapName;
+  const DownloadedOfflineMap({
+    required this.id,
+    required this.mapId,
+    required this.mapName,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['map_id'] = Variable<String>(mapId);
+    map['map_name'] = Variable<String>(mapName);
+    return map;
+  }
+
+  DownloadedOfflineMapsCompanion toCompanion(bool nullToAbsent) {
+    return DownloadedOfflineMapsCompanion(
+      id: Value(id),
+      mapId: Value(mapId),
+      mapName: Value(mapName),
+    );
+  }
+
+  factory DownloadedOfflineMap.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DownloadedOfflineMap(
+      id: serializer.fromJson<int>(json['id']),
+      mapId: serializer.fromJson<String>(json['mapId']),
+      mapName: serializer.fromJson<String>(json['mapName']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'mapId': serializer.toJson<String>(mapId),
+      'mapName': serializer.toJson<String>(mapName),
+    };
+  }
+
+  DownloadedOfflineMap copyWith({int? id, String? mapId, String? mapName}) =>
+      DownloadedOfflineMap(
+        id: id ?? this.id,
+        mapId: mapId ?? this.mapId,
+        mapName: mapName ?? this.mapName,
+      );
+  DownloadedOfflineMap copyWithCompanion(DownloadedOfflineMapsCompanion data) {
+    return DownloadedOfflineMap(
+      id: data.id.present ? data.id.value : this.id,
+      mapId: data.mapId.present ? data.mapId.value : this.mapId,
+      mapName: data.mapName.present ? data.mapName.value : this.mapName,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DownloadedOfflineMap(')
+          ..write('id: $id, ')
+          ..write('mapId: $mapId, ')
+          ..write('mapName: $mapName')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, mapId, mapName);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DownloadedOfflineMap &&
+          other.id == this.id &&
+          other.mapId == this.mapId &&
+          other.mapName == this.mapName);
+}
+
+class DownloadedOfflineMapsCompanion
+    extends UpdateCompanion<DownloadedOfflineMap> {
+  final Value<int> id;
+  final Value<String> mapId;
+  final Value<String> mapName;
+  const DownloadedOfflineMapsCompanion({
+    this.id = const Value.absent(),
+    this.mapId = const Value.absent(),
+    this.mapName = const Value.absent(),
+  });
+  DownloadedOfflineMapsCompanion.insert({
+    this.id = const Value.absent(),
+    required String mapId,
+    required String mapName,
+  }) : mapId = Value(mapId),
+       mapName = Value(mapName);
+  static Insertable<DownloadedOfflineMap> custom({
+    Expression<int>? id,
+    Expression<String>? mapId,
+    Expression<String>? mapName,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (mapId != null) 'map_id': mapId,
+      if (mapName != null) 'map_name': mapName,
+    });
+  }
+
+  DownloadedOfflineMapsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? mapId,
+    Value<String>? mapName,
+  }) {
+    return DownloadedOfflineMapsCompanion(
+      id: id ?? this.id,
+      mapId: mapId ?? this.mapId,
+      mapName: mapName ?? this.mapName,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (mapId.present) {
+      map['map_id'] = Variable<String>(mapId.value);
+    }
+    if (mapName.present) {
+      map['map_name'] = Variable<String>(mapName.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DownloadedOfflineMapsCompanion(')
+          ..write('id: $id, ')
+          ..write('mapId: $mapId, ')
+          ..write('mapName: $mapName')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1147,6 +1801,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $FloorOverlayRowsTable floorOverlayRows = $FloorOverlayRowsTable(
     this,
   );
+  late final $UserSettingsTable userSettings = $UserSettingsTable(this);
+  late final $DownloadedOfflineMapsTable downloadedOfflineMaps =
+      $DownloadedOfflineMapsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1154,6 +1811,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     buildingRows,
     floorOverlayRows,
+    userSettings,
+    downloadedOfflineMaps,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -1964,6 +2623,396 @@ typedef $$FloorOverlayRowsTableProcessedTableManager =
       FloorOverlayRow,
       PrefetchHooks Function({bool buildingId})
     >;
+typedef $$UserSettingsTableCreateCompanionBuilder =
+    UserSettingsCompanion Function({
+      Value<int> id,
+      required String username,
+      required String email,
+      required String serverUrl,
+      required String authToken,
+      required String refreshToken,
+    });
+typedef $$UserSettingsTableUpdateCompanionBuilder =
+    UserSettingsCompanion Function({
+      Value<int> id,
+      Value<String> username,
+      Value<String> email,
+      Value<String> serverUrl,
+      Value<String> authToken,
+      Value<String> refreshToken,
+    });
+
+class $$UserSettingsTableFilterComposer
+    extends Composer<_$AppDatabase, $UserSettingsTable> {
+  $$UserSettingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get username => $composableBuilder(
+    column: $table.username,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get email => $composableBuilder(
+    column: $table.email,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serverUrl => $composableBuilder(
+    column: $table.serverUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get authToken => $composableBuilder(
+    column: $table.authToken,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get refreshToken => $composableBuilder(
+    column: $table.refreshToken,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$UserSettingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $UserSettingsTable> {
+  $$UserSettingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get username => $composableBuilder(
+    column: $table.username,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get email => $composableBuilder(
+    column: $table.email,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serverUrl => $composableBuilder(
+    column: $table.serverUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get authToken => $composableBuilder(
+    column: $table.authToken,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get refreshToken => $composableBuilder(
+    column: $table.refreshToken,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$UserSettingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $UserSettingsTable> {
+  $$UserSettingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get username =>
+      $composableBuilder(column: $table.username, builder: (column) => column);
+
+  GeneratedColumn<String> get email =>
+      $composableBuilder(column: $table.email, builder: (column) => column);
+
+  GeneratedColumn<String> get serverUrl =>
+      $composableBuilder(column: $table.serverUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get authToken =>
+      $composableBuilder(column: $table.authToken, builder: (column) => column);
+
+  GeneratedColumn<String> get refreshToken => $composableBuilder(
+    column: $table.refreshToken,
+    builder: (column) => column,
+  );
+}
+
+class $$UserSettingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $UserSettingsTable,
+          UserSetting,
+          $$UserSettingsTableFilterComposer,
+          $$UserSettingsTableOrderingComposer,
+          $$UserSettingsTableAnnotationComposer,
+          $$UserSettingsTableCreateCompanionBuilder,
+          $$UserSettingsTableUpdateCompanionBuilder,
+          (
+            UserSetting,
+            BaseReferences<_$AppDatabase, $UserSettingsTable, UserSetting>,
+          ),
+          UserSetting,
+          PrefetchHooks Function()
+        > {
+  $$UserSettingsTableTableManager(_$AppDatabase db, $UserSettingsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$UserSettingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$UserSettingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$UserSettingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> username = const Value.absent(),
+                Value<String> email = const Value.absent(),
+                Value<String> serverUrl = const Value.absent(),
+                Value<String> authToken = const Value.absent(),
+                Value<String> refreshToken = const Value.absent(),
+              }) => UserSettingsCompanion(
+                id: id,
+                username: username,
+                email: email,
+                serverUrl: serverUrl,
+                authToken: authToken,
+                refreshToken: refreshToken,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String username,
+                required String email,
+                required String serverUrl,
+                required String authToken,
+                required String refreshToken,
+              }) => UserSettingsCompanion.insert(
+                id: id,
+                username: username,
+                email: email,
+                serverUrl: serverUrl,
+                authToken: authToken,
+                refreshToken: refreshToken,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$UserSettingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $UserSettingsTable,
+      UserSetting,
+      $$UserSettingsTableFilterComposer,
+      $$UserSettingsTableOrderingComposer,
+      $$UserSettingsTableAnnotationComposer,
+      $$UserSettingsTableCreateCompanionBuilder,
+      $$UserSettingsTableUpdateCompanionBuilder,
+      (
+        UserSetting,
+        BaseReferences<_$AppDatabase, $UserSettingsTable, UserSetting>,
+      ),
+      UserSetting,
+      PrefetchHooks Function()
+    >;
+typedef $$DownloadedOfflineMapsTableCreateCompanionBuilder =
+    DownloadedOfflineMapsCompanion Function({
+      Value<int> id,
+      required String mapId,
+      required String mapName,
+    });
+typedef $$DownloadedOfflineMapsTableUpdateCompanionBuilder =
+    DownloadedOfflineMapsCompanion Function({
+      Value<int> id,
+      Value<String> mapId,
+      Value<String> mapName,
+    });
+
+class $$DownloadedOfflineMapsTableFilterComposer
+    extends Composer<_$AppDatabase, $DownloadedOfflineMapsTable> {
+  $$DownloadedOfflineMapsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mapId => $composableBuilder(
+    column: $table.mapId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mapName => $composableBuilder(
+    column: $table.mapName,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DownloadedOfflineMapsTableOrderingComposer
+    extends Composer<_$AppDatabase, $DownloadedOfflineMapsTable> {
+  $$DownloadedOfflineMapsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mapId => $composableBuilder(
+    column: $table.mapId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mapName => $composableBuilder(
+    column: $table.mapName,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DownloadedOfflineMapsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DownloadedOfflineMapsTable> {
+  $$DownloadedOfflineMapsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get mapId =>
+      $composableBuilder(column: $table.mapId, builder: (column) => column);
+
+  GeneratedColumn<String> get mapName =>
+      $composableBuilder(column: $table.mapName, builder: (column) => column);
+}
+
+class $$DownloadedOfflineMapsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DownloadedOfflineMapsTable,
+          DownloadedOfflineMap,
+          $$DownloadedOfflineMapsTableFilterComposer,
+          $$DownloadedOfflineMapsTableOrderingComposer,
+          $$DownloadedOfflineMapsTableAnnotationComposer,
+          $$DownloadedOfflineMapsTableCreateCompanionBuilder,
+          $$DownloadedOfflineMapsTableUpdateCompanionBuilder,
+          (
+            DownloadedOfflineMap,
+            BaseReferences<
+              _$AppDatabase,
+              $DownloadedOfflineMapsTable,
+              DownloadedOfflineMap
+            >,
+          ),
+          DownloadedOfflineMap,
+          PrefetchHooks Function()
+        > {
+  $$DownloadedOfflineMapsTableTableManager(
+    _$AppDatabase db,
+    $DownloadedOfflineMapsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DownloadedOfflineMapsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$DownloadedOfflineMapsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$DownloadedOfflineMapsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> mapId = const Value.absent(),
+                Value<String> mapName = const Value.absent(),
+              }) => DownloadedOfflineMapsCompanion(
+                id: id,
+                mapId: mapId,
+                mapName: mapName,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String mapId,
+                required String mapName,
+              }) => DownloadedOfflineMapsCompanion.insert(
+                id: id,
+                mapId: mapId,
+                mapName: mapName,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DownloadedOfflineMapsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DownloadedOfflineMapsTable,
+      DownloadedOfflineMap,
+      $$DownloadedOfflineMapsTableFilterComposer,
+      $$DownloadedOfflineMapsTableOrderingComposer,
+      $$DownloadedOfflineMapsTableAnnotationComposer,
+      $$DownloadedOfflineMapsTableCreateCompanionBuilder,
+      $$DownloadedOfflineMapsTableUpdateCompanionBuilder,
+      (
+        DownloadedOfflineMap,
+        BaseReferences<
+          _$AppDatabase,
+          $DownloadedOfflineMapsTable,
+          DownloadedOfflineMap
+        >,
+      ),
+      DownloadedOfflineMap,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1972,4 +3021,8 @@ class $AppDatabaseManager {
       $$BuildingRowsTableTableManager(_db, _db.buildingRows);
   $$FloorOverlayRowsTableTableManager get floorOverlayRows =>
       $$FloorOverlayRowsTableTableManager(_db, _db.floorOverlayRows);
+  $$UserSettingsTableTableManager get userSettings =>
+      $$UserSettingsTableTableManager(_db, _db.userSettings);
+  $$DownloadedOfflineMapsTableTableManager get downloadedOfflineMaps =>
+      $$DownloadedOfflineMapsTableTableManager(_db, _db.downloadedOfflineMaps);
 }

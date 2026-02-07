@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 import 'package:opentak_app/widgets/_zoom_slider.dart';
 import 'package:provider/provider.dart';
+import 'package:opentak_app/db/app_database.dart';
 
 class MapDownloadState {
   final Stream<DownloadProgress> stream;
@@ -56,6 +57,9 @@ class _PredefinedMapsSettingsPageState extends State<PredefinedMapsSettingsPage>
   int maxZoom = 18;
 
   late Map<String, MapDownloadState> _downloads = {};
+  String _webUrl = '';
+  String _authToken = '';
+  bool _loadingCreds = true;
 
   String _mapKey(String id, String name) => '$id:$name';
 
@@ -63,10 +67,37 @@ class _PredefinedMapsSettingsPageState extends State<PredefinedMapsSettingsPage>
       widget.downloadedMaps.contains(_mapKey(id, name));
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
     _loadPreferences();
+
+    // If this provider is required, it must exist above this widget.
     _downloads = context.read<Map<String, MapDownloadState>>();
+
+    _initCreds();
+  }
+
+  Future<void> _initCreds() async {
+    final db = context.read<AppDatabase>();
+
+    final url = await db.getServerUrl();
+    final token = await db.getAuthToken();
+
+    if (!mounted) return;
+
+    setState(() {
+      _webUrl = url ?? '';
+      _authToken = token ?? '';
+      _loadingCreds = false;
+    });
+
+    if (_webUrl.isEmpty || _authToken.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Server URL or auth token not found. Please log in first.'),
+        ),
+      );
+    }
   }
 
   Future<void> _loadPreferences() async {
@@ -357,38 +388,62 @@ class _PredefinedMapsSettingsPageState extends State<PredefinedMapsSettingsPage>
 
   @override
   Widget build(BuildContext context) {
+
+    if (_loadingCreds) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_webUrl.isEmpty || _authToken.isEmpty) {
+      return const Scaffold(
+        body: Center(child: Text('Please log in first.')),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('Predefined Maps'),
       ),
-      body: SettingsList(
-        sections: [
-          SettingsSection(
-            title: const Text('Settings'),
-            tiles: [
-              CustomSettingsTile(
-                child: ZoomSlider(
-                  minZoom: minZoom,
-                  maxZoom: maxZoom,
-                  onChanged: (newRange) {
-                    setState(() {
-                      minZoom = newRange.start.round();
-                      maxZoom = newRange.end.round();
-                      _prefs.setInt('minZoom', minZoom);
-                      _prefs.setInt('maxZoom', maxZoom);
-                    });
-                  },
-                ),
+      body: FutureBuilder<List<PresetMap>>(
+        future: PresetMap.getMaps(_webUrl, _authToken),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          final maps = snapshot.data ?? [];
+          return SettingsList(
+            sections: [
+              SettingsSection(
+                title: const Text('Settings'),
+                tiles: [
+                  CustomSettingsTile(
+                    child: ZoomSlider(
+                      minZoom: minZoom,
+                      maxZoom: maxZoom,
+                      onChanged: (newRange) {
+                        setState(() {
+                          minZoom = newRange.start.round();
+                          maxZoom = newRange.end.round();
+                          _prefs.setInt('minZoom', minZoom);
+                          _prefs.setInt('maxZoom', maxZoom);
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              SettingsSection(
+                title: const Text('Maps'),
+                tiles: maps
+                    .map((presetMap) => downloadMapTile(presetMap))
+                    .toList(),
               ),
             ],
-          ),
-          SettingsSection(
-            title: const Text('Maps'),
-            tiles: PresetMap.dummies().map((presetMap) {
-              return downloadMapTile(presetMap);
-            }).toList(),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

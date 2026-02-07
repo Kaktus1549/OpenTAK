@@ -8,8 +8,6 @@ RUN npm install -g bun
 
 RUN bun install 
 RUN apt-get update -y && apt-get install -y openssl
-RUN bun run build
-
 EXPOSE 3000 
 
-CMD ["bun", "run", "index.ts"]
+CMD ["sh", "-c", "bunx prisma migrate deploy && bun run index.ts"]

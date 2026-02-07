@@ -3,7 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 import 'package:opentak_app/db/app_database.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:opentak_app/models/_custom_map_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:opentak_app/save_data/_file_save.dart';
@@ -78,9 +78,8 @@ class _MapWidgetState extends State<MapWidget> {
   }
 
   Future<void> _loadDownloadedMaps() async {
-    final prefs = await SharedPreferences.getInstance();
+    _downloadedMaps = await database.getDownloadedMaps();
     setState(() {
-      _downloadedMaps = prefs.getStringList('downloaded_offline_maps') ?? [];
       _tileProvider = FMTCTileProvider(
         stores: {
           for (final id in _downloadedMaps)
