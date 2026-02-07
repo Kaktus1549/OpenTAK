@@ -1,6 +1,21 @@
 #!/bin/bash
 set -euo pipefail
 
+# Portable in-place sed (macOS + GNU + busybox)
+sed_inplace() {
+  local expr="$1"
+  local file="$2"
+
+  if sed --version >/dev/null 2>&1; then
+    # GNU sed
+    sed -i "$expr" "$file"
+  else
+    # macOS/BSD sed
+    sed -i '' "$expr" "$file"
+  fi
+}
+
+
 echo " ---------- Install script ----------"
 echo "Welcome to the OpenTAK server installation script!"
 echo "This script will guide you through the installation process."
@@ -42,12 +57,13 @@ DATABASE_PORT=3306
 #  We'll do a safe encode via python3 if available.)
 ENCODED_PASSWORD="$DATABASE_PASSWORD"
 if command -v python3 >/dev/null 2>&1; then
-  ENCODED_PASSWORD="$(python3 - <<'PY'
+  ENCODED_PASSWORD="$(PW="$DATABASE_PASSWORD" python3 - <<'PY'
 import os, urllib.parse
-print(urllib.parse.quote(os.environ["PW"], safe=""))
+print(urllib.parse.quote(os.environ.get("PW",""), safe=""))
 PY
-PW="$DATABASE_PASSWORD")"
+)"
 fi
+
 
 DATABASE_URL="mysql://${DATABASE_USER}:${ENCODED_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}"
 
@@ -58,7 +74,15 @@ mkdir -p ./Docker
 mkdir -p ./REST
 
 SECRET=$(openssl rand -hex 32)
-sed -i '' "s/\$\$REPLACE_WITH_SECRET\$\$/${SECRET}/g" ./RMQTT/jwt.toml
+
+JWT_FILE="./RMQTT/jwt.toml"
+if [[ ! -f "$JWT_FILE" ]]; then
+  echo "ERROR: $JWT_FILE not found"
+  exit 1
+fi
+
+sed_inplace "s/\\$\\$REPLACE_WITH_SECRET\\$\\$/${SECRET}/g" "$JWT_FILE"
+
 
 # Compose env (used by Docker/docker-compose.yml)
 cat > ./Docker/.env <<EOF
