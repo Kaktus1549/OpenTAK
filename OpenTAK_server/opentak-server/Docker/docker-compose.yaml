@@ -5,6 +5,8 @@ services:
     ports:
       - "1883:1883"
       - "8883:8883"
+    volumes:
+      - ../RMQTT/jwt.toml:/app/rmqtt/rmqtt-plugins/rmqtt-auth-jwt.toml
 
   mysql-db:
     image: mariadb:11

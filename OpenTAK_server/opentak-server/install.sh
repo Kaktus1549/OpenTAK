@@ -57,6 +57,9 @@ echo " ---------- Writing env files ----------"
 mkdir -p ./Docker
 mkdir -p ./REST
 
+SECRET=$(openssl rand -hex 32)
+sed -i '' "s/\$\$REPLACE_WITH_SECRET\$\$/${SECRET}/g" ./RMQTT/jwt.toml
+
 # Compose env (used by Docker/docker-compose.yml)
 cat > ./Docker/.env <<EOF
 # Ports on the host machine
@@ -92,6 +95,7 @@ MASTER_USER=${MASTER_USER}
 MASTER_PASSWORD=${MASTER_PASSWORD}
 
 MQTT_BROKER_HOST=${MQTT_BROKER_HOST}
+SECRET_CODE=${SECRET}
 EOF
 
 echo "Wrote:"
