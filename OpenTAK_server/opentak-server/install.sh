@@ -1,19 +1,26 @@
 #!/bin/bash
 set -euo pipefail
 
-# Portable in-place sed (macOS + GNU + busybox)
 sed_inplace() {
   local expr="$1"
   local file="$2"
-
   if sed --version >/dev/null 2>&1; then
-    # GNU sed
     sed -i "$expr" "$file"
   else
-    # macOS/BSD sed
     sed -i '' "$expr" "$file"
   fi
 }
+
+SECRET=$(openssl rand -hex 32)
+JWT_FILE="./RMQTT/jwt.toml"
+if [[ ! -f "$JWT_FILE" ]]; then
+  echo "ERROR: $JWT_FILE not found"
+  exit 1
+fi
+
+# IMPORTANT: keep $$REPLACE_WITH_SECRET$$ literal for sed, so bash won't expand it
+sed_inplace 's/\$\$REPLACE_WITH_SECRET\$\$/'"$SECRET"'/g' "$JWT_FILE"
+
 
 
 echo " ---------- Install script ----------"
@@ -72,16 +79,6 @@ echo " ---------- Writing env files ----------"
 
 mkdir -p ./Docker
 mkdir -p ./REST
-
-SECRET=$(openssl rand -hex 32)
-
-JWT_FILE="./RMQTT/jwt.toml"
-if [[ ! -f "$JWT_FILE" ]]; then
-  echo "ERROR: $JWT_FILE not found"
-  exit 1
-fi
-
-sed_inplace "s/\\$\\$REPLACE_WITH_SECRET\\$\\$/${SECRET}/g" "$JWT_FILE"
 
 
 # Compose env (used by Docker/docker-compose.yml)
