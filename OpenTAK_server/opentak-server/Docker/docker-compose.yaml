@@ -33,7 +33,7 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       MASTER_USER: ${MASTER_USER}
       MASTER_PASSWORD: ${MASTER_PASSWORD}
-      MQTT_BROKER_HOST: ${MQTT_BROKER_HOST}
+      MQTT_BROKER_URL: ${MQTT_BROKER_URL}
     ports:
       - "${HOST_API_PORT}:3000"
     depends_on:

@@ -52,8 +52,8 @@ MASTER_USER=${MASTER_USER:-admin}
 read -sp "Enter the password for the master admin user: " MASTER_PASSWORD
 echo ""
 
-read -p "Enter MQTT broker URL (default: mqtt://mqtt.kaktusgame.eu:1883): " MQTT_BROKER_HOST
-MQTT_BROKER_HOST=${MQTT_BROKER_HOST:-mqtt://mqtt.kaktusgame.eu:1883}
+read -p "Enter MQTT broker URL (default: mqtt://mqtt.kaktusgame.eu:1883): " MQTT_BROKER_URL
+MQTT_BROKER_URL=${MQTT_BROKER_URL:-mqtt://mqtt.kaktusgame.eu:1883}
 
 # IMPORTANT: inside Docker network, DB host is the service name:
 DATABASE_HOST=mysql-db
@@ -100,7 +100,7 @@ MASTER_USER=${MASTER_USER}
 MASTER_PASSWORD=${MASTER_PASSWORD}
 
 # MQTT
-MQTT_BROKER_HOST=${MQTT_BROKER_HOST}
+MQTT_BROKER_URL=${MQTT_BROKER_URL}
 EOF
 
 # Optional: also write REST/.env for running backend outside Docker
@@ -115,7 +115,7 @@ DATABASE_URL=mysql://${DATABASE_USER}:${ENCODED_PASSWORD}@localhost:${HOST_DB_PO
 MASTER_USER=${MASTER_USER}
 MASTER_PASSWORD=${MASTER_PASSWORD}
 
-MQTT_BROKER_HOST=${MQTT_BROKER_HOST}
+MQTT_BROKER_URL=${MQTT_BROKER_URL}
 SECRET_CODE=${SECRET}
 EOF
 

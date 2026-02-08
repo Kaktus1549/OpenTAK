@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -11,6 +13,10 @@ import 'package:opentak_app/drawing/_paint_notifiers.dart';
 import 'package:opentak_app/drawing/_painter.dart';
 import 'package:opentak_app/points/_point.dart';
 import 'package:opentak_app/points/_pointMarker.dart';
+import 'package:opentak_app/realtime/_realtime_sync.dart';
+import 'package:opentak_app/Utils/_mqtt.dart';
+
+import 'package:opentak_app/widgets/_rotatingplayer.dart';
 
 
 class MapWidget extends StatefulWidget {
@@ -24,6 +30,7 @@ class MapWidget extends StatefulWidget {
   final double heading;
   final bool gpsConnected;
   final double altitude;
+  final String username;
 
   const MapWidget({
     super.key,
@@ -37,6 +44,7 @@ class MapWidget extends StatefulWidget {
     required this.heading,
     required this.gpsConnected,
     required this.altitude,
+    required this.username,
   });
 
   @override
@@ -46,7 +54,10 @@ class MapWidget extends StatefulWidget {
 class _MapWidgetState extends State<MapWidget> {
   final MapController _mapController = MapController();
   List<String> _downloadedMaps = [];
-  late FMTCTileProvider _tileProvider;
+  late FMTCTileProvider _tileProvider = FMTCTileProvider(
+    stores: const {},
+    otherStoresStrategy: BrowseStoreStrategy.read,
+  );
 
   FloorOverlay firstFloor = FloorOverlay(assetPath: "assets/test/testMap.svg", topLeft: LatLng(50.133630753827774, 14.510051097636836), bottomRight: LatLng(50.133597737787255, 14.51021080053696), bottomLeft: LatLng(50.13357448862208, 14.510064591766461), floorNumber: 1, id: 1, buildingId: 1);
   FloorOverlay secondFloor = FloorOverlay(assetPath: "assets/test/m.jpg", topLeft: LatLng(50.133630753827774, 14.510051097636836), bottomRight: LatLng(50.133597737787255, 14.51021080053696), bottomLeft: LatLng(50.13357448862208, 14.510064591766461), floorNumber: 2, id: 2, buildingId: 1);
@@ -70,6 +81,14 @@ class _MapWidgetState extends State<MapWidget> {
 
   final List<Point> points = [];
   late String? selectedPointName;
+
+  TakRealtimeSync? _rt;
+  StreamSubscription? _rtSub;
+
+  late OpenTAKMQTTClient mqtt;
+  late String deviceId;
+  final String roomId = "default";
+
 
   void _setSelectedPoint(String? name) {
     setState(() {
@@ -133,6 +152,7 @@ class _MapWidgetState extends State<MapWidget> {
     if (selectedPointName != null) {
       setState(() {
         points.add(Point(location: point, name: selectedPointName!));
+        _rt?.publishMarkerUpsert(Point(location: point, name: selectedPointName!));
       });
       return;
     }
@@ -148,6 +168,24 @@ class _MapWidgetState extends State<MapWidget> {
 
   void setDrawMode(bool value) {
     setState(() => _drawMode = value);
+  }
+
+  void _safeMapAction(VoidCallback fn) {
+    if (!_mapReady) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (!_mapReady) return;
+        fn();
+      });
+      return;
+    }
+    fn();
+  }
+  
+  MapStroke toMapStroke(RemoteStroke rs) {
+    final s = MapStroke(color: rs.color, width: rs.width, isEraser: rs.isEraser);
+    s.points.addAll(rs.points);
+    return s;
   }
 
   @override
@@ -172,6 +210,21 @@ class _MapWidgetState extends State<MapWidget> {
     database = context.read<AppDatabase>();
     customOverlay = CustomMapOverlay(floorList: [ firstFloor, secondFloor ], floorHeight: 3.0, baseHeight: 0.0, buildingID: 1, name: "Test Building");
     _loadDownloadedMaps();
+
+    mqtt = context.read<OpenTAKMQTTClient>();
+    deviceId = context.read<String>();
+
+    _rt = TakRealtimeSync(mqtt: mqtt, roomId: roomId, clientId: deviceId)..start();
+    _rtSub = _rt!.changed.listen((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _rtSub?.cancel();
+    _rt?.dispose();
+    super.dispose();
   }
 
   @override
@@ -180,11 +233,17 @@ class _MapWidgetState extends State<MapWidget> {
 
     final currentPos = LatLng(widget.latitude, widget.longitude);
 
+
     if (widget.gpsConnected == true && lastGPSStatus == false) {
-      _mapController.move(currentPos, mapZoomLevel);
+      _safeMapAction(() {_mapController.move(currentPos, mapZoomLevel);});
       lastGPSStatus = true;
-      _reloadBuildingOverlays(currentPos);
+      _safeMapAction(() {_reloadBuildingOverlays(currentPos);});
       return;
+    }
+
+    // Send update about player position to other clients
+    if (widget.gpsConnected) {
+      _rt?.publishPlayerUpdate(widget.username, currentPos, widget.heading);
     }
 
     if ((widget.centered || widget.followHeading)) {
@@ -193,9 +252,11 @@ class _MapWidgetState extends State<MapWidget> {
         heading = -widget.heading;
       }
       final currentZoom = _mapController.camera.zoom;
-      _mapController.move(currentPos, currentZoom);
-      _mapController.rotate(heading);
-      _reloadBuildingOverlays(currentPos);
+      _safeMapAction(() {
+        _mapController.move(currentPos, currentZoom);
+        _mapController.rotate(heading);
+        _reloadBuildingOverlays(currentPos);
+      });
     }
   }
 
@@ -264,9 +325,35 @@ class _MapWidgetState extends State<MapWidget> {
                         setState(() {
                           points.removeWhere((x) => x.id == point.id);
                         });
+                        _rt?.publishMarkerDelete(point.id);
                       },
                       ),
                       )),
+
+                    ...?_rt?.remoteMarkers.values.map((p) => Marker(
+                      width: 40,
+                      height: 40,
+                      point: p.location,
+                      child: DeletablePointMarker(
+                        point: p, 
+                        onDelete: () {}, 
+                        iconSize: size, 
+                        showDeleteButton: showDeleteButton
+                        )
+                    )),
+
+                    ...?_rt?.remotePlayers.values.map((p) => Marker(
+                      width: 120,   
+                      height: 80,
+                      point: p.location,
+                      alignment: Alignment.topCenter,
+                      child: RotatingPlayer(
+                        name: p.name,
+                        color: p.color,
+                        directionDeg: p.direction,
+                        size: 34,
+                      ),
+                    )),
                   ],
                 );
               },
@@ -290,19 +377,27 @@ class _MapWidgetState extends State<MapWidget> {
                       width: strokeController.currentWidth,      
                       eraser: strokeController.isEraser,
                     );
+                    _rt?.beginStroke(drawing.current!);
                     drawing.addPoint(ll);
                   },
                   onPanUpdate: (d) {
                     final ll = _mapController.camera.screenOffsetToLatLng(d.localPosition);
                     drawing.addPoint(ll);
+                    _rt?.addStrokePoint(ll);
                   },
-                  onPanEnd: (_) => drawing.endStroke(),
+                  onPanEnd: (_) {
+                    drawing.endStroke();
+                    _rt?.endStroke();
+                  },
                   child: AnimatedBuilder(
                     animation: drawing,
                     builder: (_, _) => CustomPaint(
                       painter: MapStrokesPainter(
                         camera: _mapController.camera,
-                        strokes: drawing.strokes,
+                        strokes: [
+                          ...drawing.strokes,
+                          ...(_rt?.remoteStrokes.values.map(toMapStroke) ?? const Iterable.empty()),
+                        ],
                         current: drawing.current,
                       ),
                     ),

@@ -7,7 +7,7 @@ class Point {
   final String id;
 
   // Generate a unique ID for the point
-  Point({required this.location, required this.name}) : id = '${location.latitude}:${location.longitude}:$name:${DateTime.now().millisecondsSinceEpoch}'; 
+  Point({required this.location, required this.name, String? id}) : id = id ?? '${location.latitude}:${location.longitude}:$name:${DateTime.now().millisecondsSinceEpoch}'; 
 }
 
 

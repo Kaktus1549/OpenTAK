@@ -2,6 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
+import 'package:flutter/material.dart';
+
+class MqttEnvelope {
+  final String topic;
+  final String payload;
+  MqttEnvelope(this.topic, this.payload);
+}
+
 
 class CursorUpdate {
   final String targetId;
@@ -45,6 +53,8 @@ class OpenTAKMQTTClient {
 
   final _cursorController = StreamController<CursorUpdate>.broadcast();
   Stream<CursorUpdate> get cursorUpdates => _cursorController.stream;
+  final _incoming = StreamController<MqttEnvelope>.broadcast();
+  Stream<MqttEnvelope> get incoming => _incoming.stream;
 
   bool get isConnected =>
       _client?.connectionStatus?.state == MqttConnectionState.connected;
@@ -83,6 +93,7 @@ class OpenTAKMQTTClient {
 
     try {
       await c.connect(username, password).timeout(timeout);
+      debugPrint('[MQTT] status: ${c.connectionStatus}');
     } catch (e) {
       c.disconnect();
       rethrow;
@@ -146,6 +157,8 @@ class OpenTAKMQTTClient {
       final payload =
           MqttPublishPayload.bytesToStringAsString(msg.payload.message);
 
+      _incoming.add(MqttEnvelope(topic, payload));
+
       final parts = topic.split('/');
       if (parts.length == 4 && parts[0] == 'tak' && parts[3] == 'cursor') {
         final targetId = parts[1];
@@ -162,4 +175,22 @@ class OpenTAKMQTTClient {
 
   void _onConnected() {}
   void _onDisconnected() {}
+
+
+  void subscribe(String topic, {MqttQos qos = MqttQos.atLeastOnce}) {
+    _client?.subscribe(topic, qos);
+  }
+
+  void publishString(String topic, String payload,
+      {MqttQos qos = MqttQos.atLeastOnce, bool retain = false}) {
+    final c = _client;
+    if (c == null) return;
+    final b = MqttClientPayloadBuilder()..addString(payload);
+    c.publishMessage(topic, qos, b.payload!, retain: retain);
+  }
+
+  void publishJson(String topic, Map<String, dynamic> data,
+      {MqttQos qos = MqttQos.atLeastOnce, bool retain = false}) {
+    publishString(topic, jsonEncode(data), qos: qos, retain: retain);
+  }
 }

@@ -236,6 +236,7 @@ class _HomePageState extends State<HomePage> {
             heading: heading,
             gpsConnected: gpsConnected,
             altitude: altitude,
+            username: username,
           ),
           Positioned(
             top: 58,
