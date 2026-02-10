@@ -139,7 +139,7 @@ class Helper{
     return null;
   }
 
-  static Future<List<String>> getMQTTBrokerTokenAndUsername({required AppDatabase db, required Function(Widget) setHomeWidget}) async {
+  static Future<List<String>> getMQTTBrokerTokenAndUsername({required AppDatabase db, Function(Widget)? setHomeWidget}) async {
     String serverUrl = await db.getServerUrl() ?? "https://tak.kaktusgame.eu";
     String? token = await db.getAuthToken();
     String username = await db.getUsername() ?? "N/A";
@@ -157,7 +157,9 @@ class Helper{
         if (profile.statusCode == 401) {
           // Token is invalid, clear it from database and go to login screen
           await db.clearAuthToken();
-          setHomeWidget(const Login());
+          if (setHomeWidget != null) {
+            setHomeWidget(const Login());
+          }
           return ["", "", ""];
         } else {
           throw Exception("Failed to validate token: ${profile.statusCode} ${profile.body}");
