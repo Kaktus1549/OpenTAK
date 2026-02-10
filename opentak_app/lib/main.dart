@@ -13,6 +13,9 @@ import 'package:opentak_app/Utils/_web.dart';
 import 'package:opentak_app/Utils/_mqtt.dart';
 import 'package:android_id/android_id.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:opentak_app/pages/onboarding.dart';
+import 'package:opentak_app/pages/register.dart';
+import 'package:opentak_app/pages/login.dart';
 import 'dart:io';
 
 void main() async {
@@ -21,30 +24,66 @@ void main() async {
   final database = AppDatabase();
   final storage = MapStorage();
 
-  OpenTAKMQTTClient mqttClient = OpenTAKMQTTClient();
+  late final OpenTAKMQTTClient mqttClient = OpenTAKMQTTClient();
+  late final String? deviceId;
+  late final Map<String, MapDownloadState> downloads;
+  late final MapStrokeController strokeController;
 
-  await Helper.testFunc(storage, database);
+  late Widget homeWidget;
 
-  final mqttInfo = await Helper.getMQTTBrokerTokenAndUsername(db: database);
-  String mqttUrl = mqttInfo[0];
-  String token = mqttInfo[1];
-  String username = mqttInfo[2];
+  bool? onBoarded = await database.isOnBoarded();
+  String? authToken = await database.getAuthToken();
+  String? username = await database.getUsername();
+  deviceId = await Helper.getId();
 
-  String? deviceId = await Helper._getId();
+  void setHomeWidget(Widget widget) {
+    homeWidget = widget;
+  }
 
-  await mqttClient.connect(brokerHost: mqttUrl, password: token, clientId: '$username-$deviceId');
 
+  if (onBoarded == false) {
+    homeWidget = const OnBoardingScreen();
+  } else if (authToken == null && username != null) {
+    homeWidget = const Login();
+  } else if (authToken == null && username == null) {
+    homeWidget = const Register();
+  }
+  else {
+    // Try to login, otherwise go to login screen
+    homeWidget = HomePage();
 
-  Map<String, MapDownloadState> downloads = {};
+    await Helper.testFunc(storage, database);
+
+    final mqttInfo = await Helper.getMQTTBrokerTokenAndUsername(db: database, setHomeWidget: setHomeWidget);
+    if (mqttInfo[1].isEmpty) {
+      // No valid token, go to login screen
+      homeWidget = const Login();
+    }
+    else{
+      String mqttUrl = mqttInfo[0];
+      String token = mqttInfo[1];
+      String mqttUsername = mqttInfo[2];
+
+      await mqttClient.connect(brokerHost: mqttUrl, password: token, clientId: '$mqttUsername-$deviceId');
+    }
+  }
+
+  String? serverUrl = await database.getServerUrl();
+  String? token = await database.getAuthToken();
+
+  final host = OpenTAKHTTPClient.normalizeHost(serverUrl ?? "tak.kaktusgame.eu");
+  final httpClient = OpenTAKHTTPClient(serverUrl: host, authToken: token ?? "");
+
+  downloads = {};
   await FMTCStore('mapStore').manage.create();
-
-  MapStrokeController strokeController = MapStrokeController(currentColor: Colors.red, currentWidth: 4.0, isEraser: false);
+  strokeController = MapStrokeController(currentColor: Colors.red, currentWidth: 4.0, isEraser: false);
 
   runApp(
     MultiProvider(
       providers: [
         Provider<String>.value(value: deviceId ?? "unknown-device"),
         Provider<OpenTAKMQTTClient>.value(value: mqttClient),
+        Provider<OpenTAKHTTPClient>.value(value: httpClient),
         Provider<AppDatabase>.value(value: database),
         Provider<MapStorage>.value(value: storage),
         Provider<Map<String, MapDownloadState>>.value(value: downloads),
@@ -52,19 +91,20 @@ void main() async {
         ChangeNotifierProvider<MapStrokeController>.value(value: strokeController),
         ChangeNotifierProvider<SelectedPointNotifier>.value(value: SelectedPointNotifier()),
       ],
-      child: const MyApp(),
+      child: OpenTAKApp(home: homeWidget),
     ),
   );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class OpenTAKApp extends StatelessWidget {
+  final Widget? home;
+  const OpenTAKApp({super.key, this.home});
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: HomePage(),
+      home: home,
       debugShowCheckedModeBanner: false,
     );
   }
@@ -82,30 +122,13 @@ class Helper{
     FloorOverlay secondFloor = FloorOverlay(assetPath: assetPath2, topLeft: LatLng(50.133630753827774, 14.510051097636836), bottomRight: LatLng(50.133597737787255, 14.51021080053696), bottomLeft: LatLng(50.13357448862208, 14.510064591766461), floorNumber: 2, id: 2, buildingId: 1);
 
     CustomMapOverlay customOverlay = CustomMapOverlay(floorList: [ firstFloor, secondFloor ], floorHeight: 3.0, baseHeight: 0.0, buildingID: 1, name: "Test Building");
-    //Register and login a user using OpenTAKHTTPClient, then save the username to the database and print it out. Use username
-    // "TestUser", "TestUser@example.com", "password123" as credentials and no secret code for registration.
-    OpenTAKHTTPClient client = OpenTAKHTTPClient(serverUrl: "https://tak.kaktusgame.eu", authToken: "");
-    try {
-      await client.register("TestUser", "TestUser@example.com", "password123", "8a2b5b6d4c7ae22101bb9eca20d0d66e538a0fcdbf0ddc54b55886de4ffea712");
-      String? token = await client.login("TestUser", "password123");
-      if (token != null) {
-        print("Login successful, token: $token");
-        // Save the token to the database
-            await database.insertOrUpdateUserSettings(username: "TestUser", email: "TestUser@example.com", authToken: token, serverUrl: "https://tak.kaktusgame.eu", refreshToken: "");
-      } else {
-        print("Login failed");
-      }
-    } catch (e) {
-      print("Error during registration/login: $e");
-      exit(1);
-    }
 
 
     // Save to database and file storage
     await database.insertBuildingWithFloors(customOverlay);
   }
 
-  static Future<String?> _getId() async {
+  static Future<String?> getId() async {
     var deviceInfo = DeviceInfoPlugin();
     if (Platform.isIOS) { // import 'dart:io'
       var iosDeviceInfo = await deviceInfo.iosInfo;
@@ -116,7 +139,7 @@ class Helper{
     return null;
   }
 
-  static Future<List<String>> getMQTTBrokerTokenAndUsername({required AppDatabase db}) async {
+  static Future<List<String>> getMQTTBrokerTokenAndUsername({required AppDatabase db, required Function(Widget) setHomeWidget}) async {
     String serverUrl = await db.getServerUrl() ?? "https://tak.kaktusgame.eu";
     String? token = await db.getAuthToken();
     String username = await db.getUsername() ?? "N/A";
@@ -130,29 +153,20 @@ class Helper{
       // Test the token by making a simple authenticated request, e.g., fetching user profile
       final profile = await client.get('login');
       if (profile.statusCode == 200) {
-        print("Token is valid. User profile: ${profile.body}");
       } else {
         if (profile.statusCode == 401) {
-          // TODO: Force user to re-login and update token in database via UI
-          String? token = await client.login("TestUser", "password123");
-          if (token != null) {
-            print("Re-login successful, new token: $token");
-            // Save the new token to the database
-            await db.insertOrUpdateUserSettings(username: "TestUser", email: "TestUser@example.com", authToken: token, serverUrl: "https://tak.kaktusgame.eu", refreshToken: "");
-          } else {
-            print("Re-login failed");
-            throw Exception("Token validation failed and re-login failed");
-          }
+          // Token is invalid, clear it from database and go to login screen
+          await db.clearAuthToken();
+          setHomeWidget(const Login());
+          return ["", "", ""];
         } else {
-          print("Unexpected response while validating token: ${profile.statusCode} - ${profile.body}");
+          throw Exception("Failed to validate token: ${profile.statusCode} ${profile.body}");
         }
       }
 
       mqttUrl = await client.getMQTTBrokerUrl();
-      print("MQTT Broker URL: $mqttUrl");
     } 
     catch (e) {      
-      print("Error validating token: $e");
       throw Exception("Token validation failed: $e");
     }
 

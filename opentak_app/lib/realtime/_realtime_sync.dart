@@ -72,6 +72,11 @@ class TakRealtimeSync {
   }
 
   void dispose() {
+    // Delete our own markers and player presence
+    for (final markerId in remoteMarkers.keys) {
+      publishMarkerDelete(markerId);
+    }
+    publishPlayerDelete(clientId);
     _sub?.cancel();
     _flushTimer?.cancel();
     _changed.close();

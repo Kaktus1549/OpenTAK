@@ -16,6 +16,7 @@ class OfflineMapsSettingsPage extends StatefulWidget{
 }
 
 class _OfflineMapsSettingsPageState extends State<OfflineMapsSettingsPage> {
+  @override
   late BuildContext context;
   bool _prefsLoaded = false;
   List<String> _downloadedMaps = [];

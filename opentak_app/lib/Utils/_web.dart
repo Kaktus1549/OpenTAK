@@ -2,13 +2,31 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class OpenTAKHTTPClient {
-  final String serverUrl;
-  final String authToken;
+  String serverUrl;
+  String authToken;
 
   OpenTAKHTTPClient({required this.serverUrl, required this.authToken});
 
+  static String normalizeHost(String input) {
+    var s = input.trim();
+    if (s.isEmpty) return s;
+
+    // If user typed just a host, add scheme so Uri can parse it.
+    final uri = Uri.tryParse(s.contains('://') ? s : 'https://$s');
+    if (uri != null && uri.host.isNotEmpty) {
+      return uri.host;
+    }
+
+    // Fallback: strip obvious prefixes
+    s = s.replaceAll(RegExp(r'^\s*/+'), '');
+    s = s.replaceAll(RegExp(r'^https?://'), '');
+    s = s.split('/').first;
+    return s;
+  }
+
+
   Future<http.Response> get(String endpoint) async {
-    final url = Uri.https(serverUrl.replaceFirst(RegExp(r'^https?://'), ''), endpoint);
+    final url = Uri.https(serverUrl, endpoint);
     return await http.get(url, headers: {
       'token': authToken,
     });
@@ -38,7 +56,7 @@ class OpenTAKHTTPClient {
       throw Exception('Invalid secret code');
     }
 
-    return response.statusCode == 200;
+    return response.statusCode == 200 || response.statusCode == 201;
   }
 
   Future<String?> login(String username, String password) async {
@@ -81,4 +99,10 @@ class OpenTAKHTTPClient {
       throw Exception('Failed to fetch maps: ${response.statusCode}');
     }
   }
+
+  void setUrl(String newUrl) {
+    serverUrl = normalizeHost(newUrl);
+  }
+
+  void setAuthToken(String newToken) => authToken = newToken;
 }

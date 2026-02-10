@@ -61,7 +61,8 @@ class _HomePageState extends State<HomePage> {
     _startListeningToLocation();
     _startHeadingUpdates();
     _loadUsername();
-    AppDatabase().getUsername().then((name) {
+    final db = context.read<AppDatabase>();
+    db.getUsername().then((name) {
       if (mounted) {
         setState(() {
           username = name ?? 'N/A';

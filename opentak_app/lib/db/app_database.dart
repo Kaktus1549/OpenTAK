@@ -45,6 +45,7 @@ class UserSettings extends Table {
   TextColumn get email => text()();
   TextColumn get serverUrl => text()();
   TextColumn get authToken => text()();
+  BoolColumn get onBoarded => boolean().withDefault(const Constant(false))();
   TextColumn get refreshToken => text()(); // For now its not implemented, but we can store it for later use
 }
 
@@ -227,15 +228,15 @@ class AppDatabase extends _$AppDatabase {
     final existing = await select(userSettings).getSingleOrNull();
 
     if (existing == null) {
-      if (username == null || email == null || serverUrl == null || authToken == null || refreshToken == null) {
+      if ( username == null || serverUrl == null) {
         throw ArgumentError('All fields must be provided for initial insert');
       }
       final companion = UserSettingsCompanion.insert(
         username: username,
-        email: email,
+        email: email ?? '',
         serverUrl: serverUrl,
-        authToken: authToken,
-        refreshToken: refreshToken,
+        authToken: authToken ?? '',
+        refreshToken: refreshToken ?? '',
       );
       return into(userSettings).insert(companion);
     } else {
@@ -255,6 +256,21 @@ class AppDatabase extends _$AppDatabase {
   Future<String?> getAuthToken() async {
     final settings = await select(userSettings).getSingleOrNull();
     return settings?.authToken;
+  }
+
+  Future<void> clearAuthToken() async {
+    final settings = await select(userSettings).getSingleOrNull();
+    if (settings == null) return;
+    final companion = UserSettingsCompanion(
+      id: Value(settings.id),
+      username: Value(settings.username),
+      email: Value(settings.email),
+      serverUrl: Value(settings.serverUrl),
+      authToken: const Value(''),
+      refreshToken: Value(settings.refreshToken),
+      onBoarded: Value(settings.onBoarded),
+    );
+    await update(userSettings).replace(companion);
   }
 
   Future<String?> getRefreshToken() async {
@@ -277,6 +293,27 @@ class AppDatabase extends _$AppDatabase {
     return settings?.serverUrl;
   }
 
+  Future<bool> isOnBoarded() async {
+    final settings = await select(userSettings).getSingleOrNull();
+    return settings?.onBoarded ?? false;
+  }
+
+  Future<void> setOnBoarded(bool value) async {
+    final settings = await select(userSettings).getSingleOrNull();
+    if (settings == null) {
+      throw Exception("User settings not found in database");
+    }
+    final companion = UserSettingsCompanion(
+      id: Value(settings.id),
+      username: Value(settings.username),
+      email: Value(settings.email),
+      serverUrl: Value(settings.serverUrl),
+      authToken: Value(settings.authToken),
+      refreshToken: Value(settings.refreshToken),
+      onBoarded: Value(value),
+    );
+    await update(userSettings).replace(companion);
+  }
 
   // ---------- DOWNLOADED OFFLINE MAPS ----------
 

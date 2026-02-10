@@ -1201,6 +1201,21 @@ class $UserSettingsTable extends UserSettings
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _onBoardedMeta = const VerificationMeta(
+    'onBoarded',
+  );
+  @override
+  late final GeneratedColumn<bool> onBoarded = GeneratedColumn<bool>(
+    'on_boarded',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("on_boarded" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _refreshTokenMeta = const VerificationMeta(
     'refreshToken',
   );
@@ -1219,6 +1234,7 @@ class $UserSettingsTable extends UserSettings
     email,
     serverUrl,
     authToken,
+    onBoarded,
     refreshToken,
   ];
   @override
@@ -1268,6 +1284,12 @@ class $UserSettingsTable extends UserSettings
     } else if (isInserting) {
       context.missing(_authTokenMeta);
     }
+    if (data.containsKey('on_boarded')) {
+      context.handle(
+        _onBoardedMeta,
+        onBoarded.isAcceptableOrUnknown(data['on_boarded']!, _onBoardedMeta),
+      );
+    }
     if (data.containsKey('refresh_token')) {
       context.handle(
         _refreshTokenMeta,
@@ -1308,6 +1330,10 @@ class $UserSettingsTable extends UserSettings
         DriftSqlType.string,
         data['${effectivePrefix}auth_token'],
       )!,
+      onBoarded: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}on_boarded'],
+      )!,
       refreshToken: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}refresh_token'],
@@ -1327,6 +1353,7 @@ class UserSetting extends DataClass implements Insertable<UserSetting> {
   final String email;
   final String serverUrl;
   final String authToken;
+  final bool onBoarded;
   final String refreshToken;
   const UserSetting({
     required this.id,
@@ -1334,6 +1361,7 @@ class UserSetting extends DataClass implements Insertable<UserSetting> {
     required this.email,
     required this.serverUrl,
     required this.authToken,
+    required this.onBoarded,
     required this.refreshToken,
   });
   @override
@@ -1344,6 +1372,7 @@ class UserSetting extends DataClass implements Insertable<UserSetting> {
     map['email'] = Variable<String>(email);
     map['server_url'] = Variable<String>(serverUrl);
     map['auth_token'] = Variable<String>(authToken);
+    map['on_boarded'] = Variable<bool>(onBoarded);
     map['refresh_token'] = Variable<String>(refreshToken);
     return map;
   }
@@ -1355,6 +1384,7 @@ class UserSetting extends DataClass implements Insertable<UserSetting> {
       email: Value(email),
       serverUrl: Value(serverUrl),
       authToken: Value(authToken),
+      onBoarded: Value(onBoarded),
       refreshToken: Value(refreshToken),
     );
   }
@@ -1370,6 +1400,7 @@ class UserSetting extends DataClass implements Insertable<UserSetting> {
       email: serializer.fromJson<String>(json['email']),
       serverUrl: serializer.fromJson<String>(json['serverUrl']),
       authToken: serializer.fromJson<String>(json['authToken']),
+      onBoarded: serializer.fromJson<bool>(json['onBoarded']),
       refreshToken: serializer.fromJson<String>(json['refreshToken']),
     );
   }
@@ -1382,6 +1413,7 @@ class UserSetting extends DataClass implements Insertable<UserSetting> {
       'email': serializer.toJson<String>(email),
       'serverUrl': serializer.toJson<String>(serverUrl),
       'authToken': serializer.toJson<String>(authToken),
+      'onBoarded': serializer.toJson<bool>(onBoarded),
       'refreshToken': serializer.toJson<String>(refreshToken),
     };
   }
@@ -1392,6 +1424,7 @@ class UserSetting extends DataClass implements Insertable<UserSetting> {
     String? email,
     String? serverUrl,
     String? authToken,
+    bool? onBoarded,
     String? refreshToken,
   }) => UserSetting(
     id: id ?? this.id,
@@ -1399,6 +1432,7 @@ class UserSetting extends DataClass implements Insertable<UserSetting> {
     email: email ?? this.email,
     serverUrl: serverUrl ?? this.serverUrl,
     authToken: authToken ?? this.authToken,
+    onBoarded: onBoarded ?? this.onBoarded,
     refreshToken: refreshToken ?? this.refreshToken,
   );
   UserSetting copyWithCompanion(UserSettingsCompanion data) {
@@ -1408,6 +1442,7 @@ class UserSetting extends DataClass implements Insertable<UserSetting> {
       email: data.email.present ? data.email.value : this.email,
       serverUrl: data.serverUrl.present ? data.serverUrl.value : this.serverUrl,
       authToken: data.authToken.present ? data.authToken.value : this.authToken,
+      onBoarded: data.onBoarded.present ? data.onBoarded.value : this.onBoarded,
       refreshToken: data.refreshToken.present
           ? data.refreshToken.value
           : this.refreshToken,
@@ -1422,14 +1457,22 @@ class UserSetting extends DataClass implements Insertable<UserSetting> {
           ..write('email: $email, ')
           ..write('serverUrl: $serverUrl, ')
           ..write('authToken: $authToken, ')
+          ..write('onBoarded: $onBoarded, ')
           ..write('refreshToken: $refreshToken')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, username, email, serverUrl, authToken, refreshToken);
+  int get hashCode => Object.hash(
+    id,
+    username,
+    email,
+    serverUrl,
+    authToken,
+    onBoarded,
+    refreshToken,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1439,6 +1482,7 @@ class UserSetting extends DataClass implements Insertable<UserSetting> {
           other.email == this.email &&
           other.serverUrl == this.serverUrl &&
           other.authToken == this.authToken &&
+          other.onBoarded == this.onBoarded &&
           other.refreshToken == this.refreshToken);
 }
 
@@ -1448,6 +1492,7 @@ class UserSettingsCompanion extends UpdateCompanion<UserSetting> {
   final Value<String> email;
   final Value<String> serverUrl;
   final Value<String> authToken;
+  final Value<bool> onBoarded;
   final Value<String> refreshToken;
   const UserSettingsCompanion({
     this.id = const Value.absent(),
@@ -1455,6 +1500,7 @@ class UserSettingsCompanion extends UpdateCompanion<UserSetting> {
     this.email = const Value.absent(),
     this.serverUrl = const Value.absent(),
     this.authToken = const Value.absent(),
+    this.onBoarded = const Value.absent(),
     this.refreshToken = const Value.absent(),
   });
   UserSettingsCompanion.insert({
@@ -1463,6 +1509,7 @@ class UserSettingsCompanion extends UpdateCompanion<UserSetting> {
     required String email,
     required String serverUrl,
     required String authToken,
+    this.onBoarded = const Value.absent(),
     required String refreshToken,
   }) : username = Value(username),
        email = Value(email),
@@ -1475,6 +1522,7 @@ class UserSettingsCompanion extends UpdateCompanion<UserSetting> {
     Expression<String>? email,
     Expression<String>? serverUrl,
     Expression<String>? authToken,
+    Expression<bool>? onBoarded,
     Expression<String>? refreshToken,
   }) {
     return RawValuesInsertable({
@@ -1483,6 +1531,7 @@ class UserSettingsCompanion extends UpdateCompanion<UserSetting> {
       if (email != null) 'email': email,
       if (serverUrl != null) 'server_url': serverUrl,
       if (authToken != null) 'auth_token': authToken,
+      if (onBoarded != null) 'on_boarded': onBoarded,
       if (refreshToken != null) 'refresh_token': refreshToken,
     });
   }
@@ -1493,6 +1542,7 @@ class UserSettingsCompanion extends UpdateCompanion<UserSetting> {
     Value<String>? email,
     Value<String>? serverUrl,
     Value<String>? authToken,
+    Value<bool>? onBoarded,
     Value<String>? refreshToken,
   }) {
     return UserSettingsCompanion(
@@ -1501,6 +1551,7 @@ class UserSettingsCompanion extends UpdateCompanion<UserSetting> {
       email: email ?? this.email,
       serverUrl: serverUrl ?? this.serverUrl,
       authToken: authToken ?? this.authToken,
+      onBoarded: onBoarded ?? this.onBoarded,
       refreshToken: refreshToken ?? this.refreshToken,
     );
   }
@@ -1523,6 +1574,9 @@ class UserSettingsCompanion extends UpdateCompanion<UserSetting> {
     if (authToken.present) {
       map['auth_token'] = Variable<String>(authToken.value);
     }
+    if (onBoarded.present) {
+      map['on_boarded'] = Variable<bool>(onBoarded.value);
+    }
     if (refreshToken.present) {
       map['refresh_token'] = Variable<String>(refreshToken.value);
     }
@@ -1537,6 +1591,7 @@ class UserSettingsCompanion extends UpdateCompanion<UserSetting> {
           ..write('email: $email, ')
           ..write('serverUrl: $serverUrl, ')
           ..write('authToken: $authToken, ')
+          ..write('onBoarded: $onBoarded, ')
           ..write('refreshToken: $refreshToken')
           ..write(')'))
         .toString();
@@ -2630,6 +2685,7 @@ typedef $$UserSettingsTableCreateCompanionBuilder =
       required String email,
       required String serverUrl,
       required String authToken,
+      Value<bool> onBoarded,
       required String refreshToken,
     });
 typedef $$UserSettingsTableUpdateCompanionBuilder =
@@ -2639,6 +2695,7 @@ typedef $$UserSettingsTableUpdateCompanionBuilder =
       Value<String> email,
       Value<String> serverUrl,
       Value<String> authToken,
+      Value<bool> onBoarded,
       Value<String> refreshToken,
     });
 
@@ -2673,6 +2730,11 @@ class $$UserSettingsTableFilterComposer
 
   ColumnFilters<String> get authToken => $composableBuilder(
     column: $table.authToken,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get onBoarded => $composableBuilder(
+    column: $table.onBoarded,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2716,6 +2778,11 @@ class $$UserSettingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get onBoarded => $composableBuilder(
+    column: $table.onBoarded,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get refreshToken => $composableBuilder(
     column: $table.refreshToken,
     builder: (column) => ColumnOrderings(column),
@@ -2745,6 +2812,9 @@ class $$UserSettingsTableAnnotationComposer
 
   GeneratedColumn<String> get authToken =>
       $composableBuilder(column: $table.authToken, builder: (column) => column);
+
+  GeneratedColumn<bool> get onBoarded =>
+      $composableBuilder(column: $table.onBoarded, builder: (column) => column);
 
   GeneratedColumn<String> get refreshToken => $composableBuilder(
     column: $table.refreshToken,
@@ -2788,6 +2858,7 @@ class $$UserSettingsTableTableManager
                 Value<String> email = const Value.absent(),
                 Value<String> serverUrl = const Value.absent(),
                 Value<String> authToken = const Value.absent(),
+                Value<bool> onBoarded = const Value.absent(),
                 Value<String> refreshToken = const Value.absent(),
               }) => UserSettingsCompanion(
                 id: id,
@@ -2795,6 +2866,7 @@ class $$UserSettingsTableTableManager
                 email: email,
                 serverUrl: serverUrl,
                 authToken: authToken,
+                onBoarded: onBoarded,
                 refreshToken: refreshToken,
               ),
           createCompanionCallback:
@@ -2804,6 +2876,7 @@ class $$UserSettingsTableTableManager
                 required String email,
                 required String serverUrl,
                 required String authToken,
+                Value<bool> onBoarded = const Value.absent(),
                 required String refreshToken,
               }) => UserSettingsCompanion.insert(
                 id: id,
@@ -2811,6 +2884,7 @@ class $$UserSettingsTableTableManager
                 email: email,
                 serverUrl: serverUrl,
                 authToken: authToken,
+                onBoarded: onBoarded,
                 refreshToken: refreshToken,
               ),
           withReferenceMapper: (p0) => p0

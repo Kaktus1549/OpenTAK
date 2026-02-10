@@ -53,11 +53,11 @@ class RotatingPlayer extends StatelessWidget {
             ),
 
             Transform.rotate(
-              angle: dirRad,
+              angle: dirRad + math.pi / 2, // rotate so that 0 deg (north) points up
               child: Icon(
-                Icons.navigation,
-                size: size * 0.65,
-                color: Colors.white,
+              Icons.navigation,
+              size: size * 0.8,
+              color: Colors.white,
               ),
             ),
 

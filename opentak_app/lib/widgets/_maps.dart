@@ -12,7 +12,7 @@ import 'package:opentak_app/save_data/_file_save.dart';
 import 'package:opentak_app/drawing/_paint_notifiers.dart';
 import 'package:opentak_app/drawing/_painter.dart';
 import 'package:opentak_app/points/_point.dart';
-import 'package:opentak_app/points/_pointMarker.dart';
+import 'package:opentak_app/points/_point_marker.dart';
 import 'package:opentak_app/realtime/_realtime_sync.dart';
 import 'package:opentak_app/Utils/_mqtt.dart';
 
@@ -294,7 +294,7 @@ class _MapWidgetState extends State<MapWidget> {
             if (_overlayImages.isNotEmpty) OverlayImageLayer(overlayImages: _overlayImages),
             StreamBuilder(
               stream: _mapController.mapEventStream,
-              builder: (_, __) {
+              builder: (_, _) {
                 final zoom = _mapController.camera.zoom;
                 final size = sizeForZoom(zoom);
                 final showDeleteButton = zoom >= 15.0;
