@@ -54,6 +54,21 @@ class _RegisterState extends State<Register> {
       }
     }
   }
+  
+  String? _confirmPasswordValidator(String? value) {
+    final basic = MultiValidator([
+      RequiredValidator(errorText: 'Please confirm your password'),
+    ]).call(value);
+
+    if (basic != null) return basic;
+
+    if (value != password) {
+      return 'Passwords do not match';
+    }
+    return null;
+  }
+
+  
   Map userData = {};
   final _formkey = GlobalKey<FormState>();
   String username = '';
@@ -61,6 +76,9 @@ class _RegisterState extends State<Register> {
   String password = '';
   String secretCode = '';
   String url = '';
+  String passwordCheck = '';
+  bool passwordVisible = false;
+  bool passwordCheckVisible = false;
   
   @override
   Widget build(BuildContext context) {
@@ -136,6 +154,7 @@ class _RegisterState extends State<Register> {
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: TextFormField(
+                        obscureText: !passwordVisible,
                         onChanged: (value) => password = value,
                         validator: MultiValidator([
                           RequiredValidator(errorText: 'Enter your password'),
@@ -148,6 +167,50 @@ class _RegisterState extends State<Register> {
                             prefixIcon: Icon(
                               Icons.lock,
                               color: Colors.grey[600],
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(passwordVisible
+                                  ? Icons.visibility
+                                  : Icons.visibility_off),
+                              onPressed: () {
+                                setState(
+                                  () {
+                                    passwordVisible = !passwordVisible;
+                                  },
+                                );
+                              },
+                            ),
+                            errorStyle: TextStyle(fontSize: 18.0),
+                            border: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.red),
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(9.0)))),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: TextFormField(
+                        obscureText: !passwordCheckVisible,
+                        onChanged: (value) => passwordCheck = value,
+                        validator: _confirmPasswordValidator,
+                        decoration: InputDecoration(
+                            hintText: 'Confirm your password',
+                            labelText: 'Confirm Password',
+                            prefixIcon: Icon(
+                              Icons.lock,
+                              color: Colors.grey[600],
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(passwordCheckVisible
+                                  ? Icons.visibility
+                                  : Icons.visibility_off),
+                              onPressed: () {
+                                setState(
+                                  () {
+                                    passwordCheckVisible = !passwordCheckVisible;
+                                  },
+                                );
+                              },
                             ),
                             errorStyle: TextStyle(fontSize: 18.0),
                             border: OutlineInputBorder(

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:opentak_app/Utils/_mqtt.dart';
 import 'package:opentak_app/widgets/_controlbuttons.dart';
 import 'package:opentak_app/widgets/_sosbutton.dart';
 import 'package:opentak_app/widgets/_maps.dart';
@@ -12,6 +13,9 @@ import 'package:opentak_app/models/enums/_nav_status.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:provider/provider.dart';
 import 'package:opentak_app/db/app_database.dart';
+import 'package:opentak_app/realtime/_realtime_sync.dart';
+import 'package:opentak_app/main.dart';
+import 'package:latlong2/latlong.dart';
 import 'dart:io';
 
 class HomePage extends StatefulWidget {
@@ -32,6 +36,8 @@ class _HomePageState extends State<HomePage> {
   double altitude = 0.0;
   double heading = 0.0;
   String username = 'N/A';
+
+  late final TakRealtimeSync _rt;
 
   StreamSubscription<CompassEvent>? _headingSub;
   double? _smoothedHeading;
@@ -58,15 +64,45 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _rt = context.read<TakRealtimeSync>();
     _startListeningToLocation();
     _startHeadingUpdates();
     _loadUsername();
     final db = context.read<AppDatabase>();
+
+    // Check if MQTT is connected and if not try to reconnect
+    OpenTAKMQTTClient client = context.read<OpenTAKMQTTClient>();
+    if (!client.isTAKConnected()) {
+      final mqttInfoFuture = Helper.getMQTTBrokerTokenAndUsername(db: db);
+      final deviceIdFuture = Helper.getId();
+      Future.wait([mqttInfoFuture, deviceIdFuture]).then((results) {
+        final mqttInfo = results[0] as List<String>;
+        final deviceId = results[1] as String;
+        if (mqttInfo[1].isEmpty) {
+          // No valid token, do nothing
+          return;
+        }
+        String mqttUrl = mqttInfo[0];
+        String token = mqttInfo[1];
+        String mqttUsername = mqttInfo[2];
+
+        client.connect(brokerHost: mqttUrl, password: token, clientId: '$mqttUsername-$deviceId');
+        // Wait for the client to connect before starting the realtime sync
+        Timer.periodic(const Duration(seconds: 2), (timer) {
+          if (client.isTAKConnected()) {
+            _rt.reset(client, 'default', '$mqttUsername-$deviceId');
+            timer.cancel();
+          }
+        });
+      });
+    }
+
     db.getUsername().then((name) {
       if (mounted) {
         setState(() {
           username = name ?? 'N/A';
         });
+        _rt.startHeartbeat(name ?? 'N/A', () => LatLng(lat, lon), () => heading);
       }
     });
   }
@@ -84,8 +120,10 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     _positionStreamSubscription?.cancel();
     _headingSub?.cancel();
+    _rt.dispose();
     super.dispose();
   }
+  
   void _retryLocationLater() {
     Future.delayed(const Duration(seconds: 5), () {
       if (mounted) {
@@ -250,7 +288,7 @@ class _HomePageState extends State<HomePage> {
           Positioned(
             top: 184,
             right: 16,
-            child: const SOSButton(),
+            child: SOSButton(rt: _rt, username: username),
           ),
           AnimatedPositioned(
             duration: const Duration(milliseconds: 400),

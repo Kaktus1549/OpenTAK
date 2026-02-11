@@ -10,6 +10,33 @@ Color hexToColor(String s) {
   return Color(v);
 }
 
+class NetSOSEvent {
+  final String id;
+  final String username;
+  final int ts;
+
+  NetSOSEvent({
+    required this.id,
+    required this.username,
+    required this.ts,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'username': username,
+        'ts': ts,
+      };
+
+  static NetSOSEvent fromJson(String s) {
+    final m = jsonDecode(s) as Map<String, dynamic>;
+    return NetSOSEvent(
+      id: m['id'] as String,
+      username: m['username'] as String,
+      ts: (m['ts'] as num).toInt(),
+    );
+  }
+}
+
 class NetMarkerEvent {
   final String op; // upsert, delete
   final String id;

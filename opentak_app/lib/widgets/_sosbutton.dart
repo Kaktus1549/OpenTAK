@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:opentak_app/realtime/_realtime_sync.dart';
 import 'package:flutter_svg/svg.dart';
 
 class SOSButton extends StatelessWidget {
-  const SOSButton({super.key});
+  final TakRealtimeSync _rt;
+  final String _username;
+  const SOSButton({super.key, required TakRealtimeSync rt, required String username}) : _rt = rt, _username = username;
+
+  
 
   @override
   Widget build(BuildContext context) {
+    
     return Container(
       width: 50,
       height: 52.5,
@@ -29,7 +35,7 @@ class SOSButton extends StatelessWidget {
             ),
           ),
           onPressed: () {
-            // Handle SOS button press
+            _rt.publishSOS(_username);
           },
         ),
       )

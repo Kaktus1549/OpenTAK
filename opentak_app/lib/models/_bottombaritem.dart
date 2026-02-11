@@ -58,27 +58,27 @@ class BottomBarItemModel {
         },
       ),
       BottomBarItemModel(
-        iconPath: 'assets/icons/testIcon.svg',
-        label: 'Test2',
+        iconPath: 'assets/points/dangerIcon.svg',
+        label: 'Danger',
         backgroundColor: Colors.black,
         onTap: () => {
-          pointCallback('testIcon'),
+          pointCallback('dangerIcon'),
         },
       ),
       BottomBarItemModel(
-        iconPath: 'assets/icons/testIcon.svg',
-        label: 'Test3',
+        iconPath: 'assets/points/infoIcon.svg',
+        label: 'Info',
         backgroundColor: Colors.black,
         onTap: () => {
-          pointCallback('testIcon'),
+          pointCallback('infoIcon'),
         },
       ),
       BottomBarItemModel(
-        iconPath: 'assets/icons/testIcon.svg',
-        label: 'Test4',
+        iconPath: 'assets/points/planIcon.svg',
+        label: 'Plan',
         backgroundColor: Colors.black,
         onTap: () => {
-          pointCallback('testIcon'),
+          pointCallback('planIcon'),
         },
       )
     ];

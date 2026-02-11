@@ -5,7 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 import 'package:opentak_app/db/app_database.dart';
-
+import 'package:opentak_app/realtime/_realtime_sync.dart';
 import 'package:opentak_app/models/_custom_map_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:opentak_app/save_data/_file_save.dart';
@@ -13,9 +13,7 @@ import 'package:opentak_app/drawing/_paint_notifiers.dart';
 import 'package:opentak_app/drawing/_painter.dart';
 import 'package:opentak_app/points/_point.dart';
 import 'package:opentak_app/points/_point_marker.dart';
-import 'package:opentak_app/realtime/_realtime_sync.dart';
 import 'package:opentak_app/Utils/_mqtt.dart';
-
 import 'package:opentak_app/widgets/_rotatingplayer.dart';
 
 
@@ -87,7 +85,7 @@ class _MapWidgetState extends State<MapWidget> {
 
   late OpenTAKMQTTClient mqtt;
   late String deviceId;
-  final String roomId = "default";
+  
 
 
   void _setSelectedPoint(String? name) {
@@ -214,7 +212,8 @@ class _MapWidgetState extends State<MapWidget> {
     mqtt = context.read<OpenTAKMQTTClient>();
     deviceId = context.read<String>();
 
-    _rt = TakRealtimeSync(mqtt: mqtt, roomId: roomId, clientId: deviceId)..start();
+    _rt = context.read<TakRealtimeSync>();
+    // Ad _rt to Provider
     _rtSub = _rt!.changed.listen((_) {
       if (mounted) setState(() {});
     });

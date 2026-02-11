@@ -16,10 +16,40 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:opentak_app/pages/onboarding.dart';
 import 'package:opentak_app/pages/register.dart';
 import 'package:opentak_app/pages/login.dart';
+import 'package:opentak_app/realtime/_realtime_sync.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:io';
+
+
+Future<void> initLocalNotifications(FlutterLocalNotificationsPlugin fln) async {
+  const iosInit = DarwinInitializationSettings(
+    requestAlertPermission: true,
+    requestBadgePermission: true,
+    requestSoundPermission: true,
+  );
+
+  const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  const initSettings = InitializationSettings(
+    iOS: iosInit,
+    android: androidInit,
+  );
+
+  await fln.initialize(settings: initSettings);
+
+
+  // iOS explicit permission request (safe to call)
+  await fln
+      .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+      ?.requestPermissions(alert: true, badge: true, sound: true);
+}
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final fln = FlutterLocalNotificationsPlugin();
+  await initLocalNotifications(fln);
+
   await FMTCObjectBoxBackend().initialise();
   final database = AppDatabase();
   final storage = MapStorage();
@@ -28,6 +58,8 @@ void main() async {
   late final String? deviceId;
   late final Map<String, MapDownloadState> downloads;
   late final MapStrokeController strokeController;
+
+  late final TakRealtimeSync rt = TakRealtimeSync(mqtt: mqttClient, roomId: "default", clientId: deviceId ?? "unknown-device");
 
   late Widget homeWidget;
 
@@ -65,6 +97,8 @@ void main() async {
       String mqttUsername = mqttInfo[2];
 
       await mqttClient.connect(brokerHost: mqttUrl, password: token, clientId: '$mqttUsername-$deviceId');
+
+      rt.setMqttClient(mqttClient);
     }
   }
 
@@ -84,6 +118,7 @@ void main() async {
         Provider<String>.value(value: deviceId ?? "unknown-device"),
         Provider<OpenTAKMQTTClient>.value(value: mqttClient),
         Provider<OpenTAKHTTPClient>.value(value: httpClient),
+        Provider<TakRealtimeSync>.value(value: rt),
         Provider<AppDatabase>.value(value: database),
         Provider<MapStorage>.value(value: storage),
         Provider<Map<String, MapDownloadState>>.value(value: downloads),
@@ -100,7 +135,7 @@ class OpenTAKApp extends StatelessWidget {
   final Widget? home;
   const OpenTAKApp({super.key, this.home});
 
-  // This widget is the root of your application.
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

@@ -1,6 +1,13 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
+double _norm360(double deg) {
+  deg %= 360.0;
+  if (deg < 0) deg += 360.0;
+  return deg;
+}
+
+
 class RotatingPlayer extends StatelessWidget {
   const RotatingPlayer({
     super.key,
@@ -17,7 +24,9 @@ class RotatingPlayer extends StatelessWidget {
 
    @override
   Widget build(BuildContext context) {
-    final dirRad = directionDeg * math.pi / 180.0;
+
+    final correctedDeg = _norm360(directionDeg + 180.0);
+    final angle = correctedDeg * math.pi / 180.0;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -53,11 +62,11 @@ class RotatingPlayer extends StatelessWidget {
             ),
 
             Transform.rotate(
-              angle: dirRad + math.pi / 2, // rotate so that 0 deg (north) points up
+              angle: angle,
               child: Icon(
-              Icons.navigation,
-              size: size * 0.8,
-              color: Colors.white,
+                Icons.navigation,
+                size: size * 0.8,
+                color: Colors.white,
               ),
             ),
 

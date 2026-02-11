@@ -1,12 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:flutter/material.dart';
+import 'package:typed_data/typed_buffers.dart';
+
 
 class MqttEnvelope {
   final String topic;
-  final String payload;
+  final Uint8List payload;
   MqttEnvelope(this.topic, this.payload);
 }
 
@@ -62,6 +65,7 @@ class OpenTAKMQTTClient {
   /// brokerHost examples:
   /// - "mqtt.kaktusgame.eu" (tcp 1883 by default)
   /// - "10.0.0.5"
+  
   Future<void> connect({
     required String brokerHost,
     int port = 1883,
@@ -94,6 +98,8 @@ class OpenTAKMQTTClient {
     try {
       await c.connect(username, password).timeout(timeout);
       debugPrint('[MQTT] status: ${c.connectionStatus}');
+      debugPrint('[MQTT] client connected: ${c.connectionStatus?.state == MqttConnectionState.connected}');
+      debugPrint('[MQTT] broker: $brokerHost:$port');
     } catch (e) {
       c.disconnect();
       rethrow;
@@ -105,6 +111,36 @@ class OpenTAKMQTTClient {
 
     // Listen for incoming messages
     c.updates?.listen(_handleMessages);
+  }
+
+  bool isTAKConnected(){
+    return _client?.connectionStatus?.state == MqttConnectionState.connected;
+  }
+
+  void connectAfterLoginOrRegister(String username, String password, String clientIdentifier, String brokerHost) {
+    final c = _client;
+    if (c == null) return;
+
+    // MQTT doesn't support changing credentials on the fly, so we have to disconnect and reconnect
+    if (isTAKConnected()) {
+      disconnect();
+    }
+
+    connect(
+      brokerHost: brokerHost,
+      port: c.port,
+      clientId: clientIdentifier,
+      username: username,
+      password: password,
+      useTLS: c.secure,
+      cleanSession: true,
+    );
+  }
+
+  void disconnectIfConnected() {
+    if (isTAKConnected()) {
+      disconnect();
+    }
   }
 
   void disconnect() {
@@ -140,8 +176,9 @@ class OpenTAKMQTTClient {
       ts: ts ?? DateTime.now().millisecondsSinceEpoch,
     );
 
-    final builder = MqttClientPayloadBuilder()
-      ..addString(update.toJson());
+    final bytes = Uint8Buffer()..addAll(utf8.encode(update.toJson()));
+    final builder = MqttClientPayloadBuilder()..addBuffer(bytes);
+
 
     final topic = 'tak/$targetId/$clientId/cursor';
     c.publishMessage(topic, qos, builder.payload!, retain: retain);
@@ -154,16 +191,15 @@ class OpenTAKMQTTClient {
       final topic = e.topic; // tak/<targetId>/<clientId>/cursor
       final msg = e.payload as MqttPublishMessage;
 
-      final payload =
-          MqttPublishPayload.bytesToStringAsString(msg.payload.message);
-
-      _incoming.add(MqttEnvelope(topic, payload));
+      final raw = Uint8List.fromList(msg.payload.message);
+      _incoming.add(MqttEnvelope(topic, raw));
 
       final parts = topic.split('/');
       if (parts.length == 4 && parts[0] == 'tak' && parts[3] == 'cursor') {
         final targetId = parts[1];
         final clientId = parts[2];
         try {
+          final payload = utf8.decode(raw, allowMalformed: false);
           final update = CursorUpdate.fromJson(targetId, clientId, payload);
           _cursorController.add(update);
         } catch (_) {
@@ -184,10 +220,16 @@ class OpenTAKMQTTClient {
   void publishString(String topic, String payload,
       {MqttQos qos = MqttQos.atLeastOnce, bool retain = false}) {
     final c = _client;
-    if (c == null) return;
-    final b = MqttClientPayloadBuilder()..addString(payload);
+    if (c == null || !isConnected) return;
+
+    // ALWAYS encode to UTF-8 bytes explicitly
+    final bytes = Uint8Buffer()..addAll(utf8.encode(payload));
+    final b = MqttClientPayloadBuilder()..addBuffer(bytes);
+
+
     c.publishMessage(topic, qos, b.payload!, retain: retain);
   }
+
 
   void publishJson(String topic, Map<String, dynamic> data,
       {MqttQos qos = MqttQos.atLeastOnce, bool retain = false}) {

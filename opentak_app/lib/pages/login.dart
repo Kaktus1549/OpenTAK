@@ -87,6 +87,7 @@ class _LoginState extends State<Login> {
   Map userData = {};
   final _formkey = GlobalKey<FormState>();
   String? serverUrl = '';
+  bool passwordVisible = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -138,6 +139,7 @@ class _LoginState extends State<Login> {
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: TextFormField(
+                        obscureText: !passwordVisible,
                         controller: _passwordController,
                         validator: MultiValidator([
                           RequiredValidator(errorText: 'Enter your password'),
@@ -145,6 +147,18 @@ class _LoginState extends State<Login> {
                               errorText: 'Password must be at least 6 characters long'),
                         ]).call,
                         decoration: InputDecoration(
+                            suffixIcon: IconButton(
+                              icon: Icon(passwordVisible
+                                  ? Icons.visibility
+                                  : Icons.visibility_off),
+                              onPressed: () {
+                                setState(
+                                  () {
+                                    passwordVisible = !passwordVisible;
+                                  },
+                                );
+                              },
+                            ),
                             hintText: 'Enter your password',
                             labelText: 'Password',
                             prefixIcon: Icon(
