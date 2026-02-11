@@ -337,7 +337,7 @@ class _MapWidgetState extends State<MapWidget> {
                         point: p, 
                         onDelete: () {}, 
                         iconSize: size, 
-                        showDeleteButton: showDeleteButton
+                        showDeleteButton: false,
                         )
                     )),
 
